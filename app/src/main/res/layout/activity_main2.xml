@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="10dp"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/i"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="名称" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/i5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="域名" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/i1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="包名" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/i2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="活动名" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/i3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="extra 键名(一行一个)" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/i4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="extra 值(一行一个)" />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="启动" />
+
+    <Button
+        android:id="@+id/button1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="保存" />
+
+    <Button
+        android:id="@+id/button2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="删除"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/show"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>
