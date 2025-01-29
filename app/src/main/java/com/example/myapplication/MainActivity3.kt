@@ -5,7 +5,6 @@ import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 
@@ -56,7 +55,6 @@ class MainActivity3 : AppCompatActivity() {
                             esd = esd.substring(0, esd.length - 1)
                         }
                     }
-                    Toast.makeText(this, esd, Toast.LENGTH_SHORT).show()
                     var ii = "am start -n ${Pp}/${activity}"
                     if (keys != null) {
                         val ii3 = keys.split("\n")
