@@ -1,17 +1,15 @@
 package com.example.myapplication
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity3 : AppCompatActivity() {
+class MainActivity3 : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         val list = getSharedPreferences("list", MODE_PRIVATE)
         val data = intent.data
 
@@ -25,7 +23,7 @@ class MainActivity3 : AppCompatActivity() {
                 onCreate(db)
             }
         }
-        val db = DbHelper(this).writableDatabase
+            val db = DbHelper(this).writableDatabase
 
             when (data!!.scheme) {
                 "kkp" -> {

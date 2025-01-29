@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -14,16 +15,15 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.BaseAdapter
 import android.widget.Button
+import android.widget.GridView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.textfield.TextInputEditText
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,8 +64,6 @@ class MainActivity : AppCompatActivity() {
             return lk
         }
 
-
-            lateinit var io: ActivityResultLauncher<Intent>
             setContentView(R.layout.activity_main)
             val button = findViewById<Button>(R.id.button)
             val button1 = findViewById<Button>(R.id.button1)
@@ -75,28 +73,28 @@ class MainActivity : AppCompatActivity() {
             val i4 = findViewById<TextInputEditText>(R.id.i4)
             val i5 = findViewById<TextInputEditText>(R.id.i5)
             val i = findViewById<TextInputEditText>(R.id.i)
-            val adp = findViewById<RecyclerView>(R.id.startlist)
-            val aadp = findViewById<RecyclerView>(R.id.applist)
+            val adp = findViewById<GridView>(R.id.startlist)
+            val aadp = findViewById<LinearLayout>(R.id.applist)
 
 
 
-        class ListAdapter(private val total: List<String>) :
-                RecyclerView.Adapter<ListAdapter.ViewHolder>() {
 
-                inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-                    val textView = itemView as TextView
-                }
+        class GridAdapter(
+            private val context: Context = this,
+            private val data: List<String>
+        ) : BaseAdapter() {
 
-                override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-                    val view = TextView(parent.context)
-                    return ViewHolder(view)
-                }
+            override fun getCount() = data.size/2
 
-                override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            override fun getItem(position: Int) = data[position]
 
-                    holder.textView.apply {
-                        text = total[2*position]
-                        textSize = 20f
+            override fun getItemId(position: Int) = position.toLong()
+
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+                val textView = TextView(context)
+                textView.apply {
+                    text = data[position * 2]
+                    textSize = 20f
                         gravity = Gravity.CENTER
                         val borderDrawable = GradientDrawable()
                         borderDrawable.shape = GradientDrawable.RECTANGLE
@@ -107,77 +105,41 @@ class MainActivity : AppCompatActivity() {
                         setOnClickListener {
                             //启动activity2并传入position
                             val intent = Intent(this@MainActivity, MainActivity2::class.java)
-                            intent.putExtra("item", total[2*position+1])
-                            io.launch(intent)
+                            intent.putExtra("item", data[2*position+1])
+                            //io.launch(intent)
+                            startActivityForResult(intent, 1)
                         }
-                    }
-                }
 
-                override fun getItemCount() = total.size/2
+                }
+                return textView
             }
 
-            class AppAdapter(private val total: List<ResolveInfo>) :
-                RecyclerView.Adapter<AppAdapter.ViewHolder>() {
+        }
 
-                inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-                    val textView = itemView as TextView
-
+            for (idfec in browserList) {
+                val tyt = TextView(this)
+                val oo = idfec.activityInfo
+                tyt.text = oo.applicationInfo.loadLabel(packageManager)
+                tyt.layoutParams = ViewGroup.LayoutParams(200, 200)
+                tyt.gravity = Gravity.CENTER
+                val borderDrawable = GradientDrawable()
+                borderDrawable.shape = GradientDrawable.RECTANGLE
+                borderDrawable.setStroke(2, Color.BLACK)
+                borderDrawable.cornerRadius = 8f
+                tyt.background = borderDrawable
+                tyt.setPadding(8, 8, 8, 8)
+                tyt.setOnClickListener {
+                    list.edit().putString("browser", oo.packageName).apply()
+                    Toast.makeText(
+                        this,
+                        "已设置${oo.applicationInfo.loadLabel(packageManager)}为默认打开方式",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-
-                override fun onCreateViewHolder(
-                    parent: ViewGroup,
-                    viewType: Int
-                ): AppAdapter.ViewHolder {
-                    val view = TextView(parent.context)
-                    return ViewHolder(view)
-                }
-
-                override fun onBindViewHolder(holder: AppAdapter.ViewHolder, position: Int) {
-
-                    holder.textView.apply {
-                    val oo = total[position].activityInfo
-                    text = oo.applicationInfo.loadLabel(packageManager)
-                        layoutParams = ViewGroup.LayoutParams(200, 200)
-                    gravity = Gravity.CENTER
-                        val borderDrawable = GradientDrawable()
-                        borderDrawable.shape = GradientDrawable.RECTANGLE
-                        borderDrawable.setStroke(2, Color.BLACK)
-                        borderDrawable.cornerRadius = 8f
-                        background = borderDrawable
-                        setPadding(8, 8, 8, 8)
-                        setOnClickListener {
-                        list.edit().putString("browser", oo.packageName).apply()
-                        Toast.makeText(
-                            this@MainActivity,
-                            "已设置${oo.applicationInfo.loadLabel(packageManager)}为默认打开方式",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-                }
-
-                override fun getItemCount() = total.size
+                aadp.addView(tyt)
             }
 
-
-
-
-        io = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                adp.adapter = ListAdapter(item())
-            }
-            adp.adapter = ListAdapter(item())
-            //adp使用网格布局
-            adp.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this,3)
-
-            aadp.adapter = AppAdapter(browserList)
-            //adp使用卡片布局
-            aadp.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(
-                this,
-                RecyclerView.HORIZONTAL,
-                false
-            )
-
-
+            adp.adapter = GridAdapter(this, item())
 
             button1.setOnClickListener {
                 val hy = ContentValues().apply {
@@ -195,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                 i3.setText("")
                 i4.setText("")
                 i5.setText("")
-                adp.adapter = ListAdapter(item())
+                adp.adapter = GridAdapter(this, item())
             }
 
             button.setOnClickListener {
@@ -216,4 +178,72 @@ class MainActivity : AppCompatActivity() {
                 ProcessBuilder("su", "-c", ii).start()
             }
         }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        val adp = findViewById<GridView>(R.id.startlist)
+
+        class GridAdapter(
+            private val context: Context = this,
+            private val data0: List<String>
+        ) : BaseAdapter() {
+
+            override fun getCount() = data0.size/2
+
+            override fun getItem(position: Int) = data0[position]
+
+            override fun getItemId(position: Int) = position.toLong()
+
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+                val textView = TextView(context)
+                textView.apply {
+                    text = data0[position * 2]
+                    textSize = 20f
+                    gravity = Gravity.CENTER
+                    val borderDrawable = GradientDrawable()
+                    borderDrawable.shape = GradientDrawable.RECTANGLE
+                    borderDrawable.setStroke(2, Color.BLACK)
+                    borderDrawable.cornerRadius = 8f
+                    background = borderDrawable
+                    setPadding(8, 8, 8, 8)
+                    setOnClickListener {
+                        //启动activity2并传入position
+                        val intent = Intent(this@MainActivity, MainActivity2::class.java)
+                        intent.putExtra("item", data0[2*position+1])
+                        //io.launch(intent)
+                        startActivityForResult(intent, 1)
+                    }
+                }
+                return textView
+            }
+        }
+
+        class DbHelper(context: Context) : SQLiteOpenHelper(context, "list.db", null, 1) {
+            override fun onCreate(db: SQLiteDatabase) {
+                db.execSQL("CREATE TABLE list (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,host TEXT, package TEXT, activity TEXT , keys TEXT, datas TEXT)")
+            }
+
+            override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+                db.execSQL("DROP TABLE IF EXISTS users")
+                onCreate(db)
+            }
+        }
+        val db = DbHelper(this).writableDatabase
+
+        fun item() : List<String> {
+            val cursor = db.query("list", arrayOf("id","name"), null, null, null, null, null)
+            val lk :MutableList<String> = mutableListOf()
+            while (cursor.moveToNext()) {
+                val name = cursor.getString(cursor.getColumnIndexOrThrow("name"))
+                lk.add(name)
+                val id = cursor.getString(cursor.getColumnIndexOrThrow("id"))
+                lk.add(id)
+            }
+            cursor.close()
+            return lk
+        }
+
+        adp.adapter = GridAdapter(this,item())
+
+    }
     }

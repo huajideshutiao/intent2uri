@@ -6,19 +6,25 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <androidx.recyclerview.widget.RecyclerView
+    <GridView
         android:id="@+id/startlist"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:layout_margin="10dp">
-
-    </androidx.recyclerview.widget.RecyclerView>
+        android:layout_margin="10dp"
+        android:numColumns="3" />
 
     <include layout="@layout/activity_main2" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/applist"
+    <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp" />
+        android:layout_margin="10dp">
+
+        <LinearLayout
+            android:id="@+id/applist"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"/>
+    </HorizontalScrollView>
+
 </LinearLayout>
