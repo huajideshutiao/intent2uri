@@ -27,17 +27,18 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val list = getSharedPreferences("list", MODE_PRIVATE)
-        fun getInstalledBrowserApps(): List<ResolveInfo> {
+
+        val browserList : List<ResolveInfo> = run {
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.bing.com"))
             val browserList =
                 packageManager.queryIntentActivities(browserIntent, PackageManager.MATCH_ALL)
+                    .filter { it.activityInfo.packageName != packageName }
 
             if (list.getString("browser", "") == "")list.edit().putString("browser", browserList[0].activityInfo.packageName).apply()
-            return browserList.filter { it.activityInfo.packageName != packageName }
+            browserList
         }
-
-        val browserList = getInstalledBrowserApps()
 
         class DbHelper(context: Context) : SQLiteOpenHelper(context, "list.db", null, 1) {
             override fun onCreate(db: SQLiteDatabase) {

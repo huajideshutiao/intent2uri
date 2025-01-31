@@ -3,12 +3,40 @@ package com.example.myapplication
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
+
 
 class MainActivity3 : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        fun getLatestImagePath(): String {
+            val contentResolver = this.contentResolver
+            var latestImagePath = ""
+            val projection = arrayOf(MediaStore.Images.Media.DATA)
+            val sortOrder = "${MediaStore.Images.Media.DATE_TAKEN} DESC"
+            val uri: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+
+            val cursor: Cursor? = contentResolver.query(
+                uri,
+                projection,
+                null,
+                null,
+                sortOrder
+            )
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    latestImagePath = it.getString(it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA))
+                }
+            }
+            return latestImagePath
+        }
+
         super.onCreate(savedInstanceState)
         val list = getSharedPreferences("list", MODE_PRIVATE)
         val data = intent.data
@@ -58,7 +86,9 @@ class MainActivity3 : Activity() {
                         val ii3 = keys.split("\n")
                         val ii4 = datas.split("\n")
                         for (df in 0 until ii3.size) {
-                            ii += " --e${ii3[df].replaceRange(1, 2, " '")}' '${ii4[df].replace("{key}",esd)}'"
+                            val ioh= ii4[df].replace("{key}",esd)
+                                            .replace("{photo}",getLatestImagePath())
+                            ii += " --e${ii3[df].replaceRange(1, 2, " '")}' '${ioh}'"
                         }
                     }
 
@@ -92,7 +122,10 @@ class MainActivity3 : Activity() {
                                 val ii3 = keys.split("\n")
                                 val ii4 = datas.split("\n")
                                 for (df in 0 until ii3.size) {
-                                    ii += " --e${ii3[df].replaceRange(1, 2, " '")}' '${ii4[df].replaceFirst("{key}",data.toString())}'"
+                                    ii += " --e${ii3[df].replaceRange(1, 2, " '")}' '${
+                                        ii4[df].replace("{key}",data.toString())
+                                                .replace("{photo}",getLatestImagePath())
+                                    }'"
                                 }
                             }
                             ProcessBuilder("su", "-c", ii).start()

@@ -74,6 +74,8 @@ class MainActivity2 : Activity() {
                 put("datas", i4.text.toString())
             }
             db.update("list", hy, "id = ?", arrayOf(item.toString()))
+            db.close()
+            finish()
         }
 
         button.setOnClickListener {
