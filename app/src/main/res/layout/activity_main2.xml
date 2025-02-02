@@ -17,7 +17,13 @@
             android:id="@+id/i5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="域名" />
+            android:hint="URL正则" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/i6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="替换规则" />
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/i1"
@@ -30,6 +36,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="活动名" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/i7"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="uri" />
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/i3"
@@ -47,7 +59,8 @@
             android:id="@+id/button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="启动" />
+            android:text="启动"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/button1"
