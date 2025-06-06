@@ -39,7 +39,7 @@ class MainActivity2 : Activity() {
         i2.setText (activity)
         i3.setText(keys)
         i4.setText(datas)
-        i6.setText(change2)
+        i6.setText(change2.joinToString("\n"))
         i7.setText(uri)
         }
 
@@ -48,7 +48,7 @@ class MainActivity2 : Activity() {
 
 
         button1.setOnClickListener {
-            OpenLink.toDb(OpenLink(i.text.toString(),i5.text.toString(),i1.text.toString(),i2.text.toString(),i3.text.toString(),i4.text.toString(),i6.text.toString(),i7.text.toString()),db, item)
+            OpenLink.toDb(OpenLink(i.text.toString(),i5.text.toString(),i1.text.toString(),i2.text.toString(),i3.text.toString(),i4.text.toString(),i6.text.toString().split("\n"),i7.text.toString()),db, item)
             finish()
         }
 

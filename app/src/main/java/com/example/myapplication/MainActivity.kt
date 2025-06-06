@@ -119,7 +119,7 @@ class MainActivity : Activity() {
                         i2.text.toString(),
                         i3.text.toString(),
                         i4.text.toString(),
-                        i6.text.toString(),
+                        i6.text.toString().split("\n"),
                         i7.text.toString()
                     ), db
                 )

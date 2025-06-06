@@ -8,7 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
 import android.provider.MediaStore
 
-data class OpenLink(val name: String = "", val host: String, val pp: String, val activity: String, val keys: String, var datas: String, val change2: String, var uri: String) {
+data class OpenLink(val name: String = "", val host: String, val pp: String, val activity: String, val keys: String, var datas: String, val change2: List<String>, var uri: String) {
 
     companion object {
         fun fromDb(db: SQLiteDatabase, id: String): OpenLink {
@@ -16,7 +16,7 @@ data class OpenLink(val name: String = "", val host: String, val pp: String, val
             cursor.moveToFirst()
             val name = cursor.getString(cursor.getColumnIndexOrThrow("name"))
             val host = cursor.getString(cursor.getColumnIndexOrThrow("host"))
-            val change2 = cursor.getString(cursor.getColumnIndexOrThrow("change2"))
+            val change2 = cursor.getString(cursor.getColumnIndexOrThrow("change2")).split("\n")
             val pp = cursor.getString(cursor.getColumnIndexOrThrow("package"))
             val activity = cursor.getString(cursor.getColumnIndexOrThrow("activity"))
             val keys = cursor.getString(cursor.getColumnIndexOrThrow("keys"))
@@ -34,7 +34,7 @@ data class OpenLink(val name: String = "", val host: String, val pp: String, val
                 put("activity", openLink.activity)
                 put("keys", openLink.keys)
                 put("datas", openLink.datas)
-                put("change2", openLink.change2)
+                put("change2", openLink.change2.joinToString("\n"))
                 put("uri", openLink.uri)
             }
             if (id == "")db.insert("list", null, hy)
