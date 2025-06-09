@@ -2,13 +2,10 @@ package com.example.myapplication
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import android.net.Uri
-import android.provider.MediaStore
 
-data class OpenLink(val name: String = "", val host: String, val pp: String, val activity: String, val keys: String, var datas: String, val change2: List<String>, var uri: String) {
+data class OpenLink(val name: String = "", val host: String, val pp: String, val activity: String, val keys: String, var datas: String, val change2: String, var uri: String) {
 
     companion object {
         fun fromDb(db: SQLiteDatabase, id: String): OpenLink {
@@ -16,7 +13,7 @@ data class OpenLink(val name: String = "", val host: String, val pp: String, val
             cursor.moveToFirst()
             val name = cursor.getString(cursor.getColumnIndexOrThrow("name"))
             val host = cursor.getString(cursor.getColumnIndexOrThrow("host"))
-            val change2 = cursor.getString(cursor.getColumnIndexOrThrow("change2")).split("\n")
+            val change2 = cursor.getString(cursor.getColumnIndexOrThrow("change2"))
             val pp = cursor.getString(cursor.getColumnIndexOrThrow("package"))
             val activity = cursor.getString(cursor.getColumnIndexOrThrow("activity"))
             val keys = cursor.getString(cursor.getColumnIndexOrThrow("keys"))
@@ -34,7 +31,7 @@ data class OpenLink(val name: String = "", val host: String, val pp: String, val
                 put("activity", openLink.activity)
                 put("keys", openLink.keys)
                 put("datas", openLink.datas)
-                put("change2", openLink.change2.joinToString("\n"))
+                put("change2", openLink.change2)
                 put("uri", openLink.uri)
             }
             if (id == "")db.insert("list", null, hy)
@@ -67,34 +64,7 @@ fun item(db: SQLiteDatabase,column:String) : List<String> {
     return lk
 }
 
-
-fun getLatestImagePath(context: Context): String {
-    val contentResolver = context.contentResolver
-    var latestImagePath = ""
-    val projection = arrayOf(MediaStore.Images.Media.DATA)
-    val sortOrder = "${MediaStore.Images.Media.DATE_TAKEN} DESC"
-    val uri: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-
-    val cursor: Cursor? = contentResolver.query(
-        uri,
-        projection,
-        null,
-        null,
-        sortOrder
-    )
-
-    cursor?.use {
-        if (it.moveToFirst()) {
-            latestImagePath = it.getString(it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA))
-        }
-    }
-    return latestImagePath
-}
-
 fun openLink(openLink: OpenLink) {
-
-
-
     var ii = "am start -a android.intent.action.VIEW"
     openLink.apply {
         if (pp != "") ii += " -n $pp"
@@ -105,9 +75,8 @@ fun openLink(openLink: OpenLink) {
             val ii4 = datas.split("\n")
             for (df in ii3.indices) {
                 ii += " --e${ii3[df].replaceRange(1, 2, " '")}' '${ii4[df]}'"
+            }
         }
-
-    }
         ProcessBuilder("su", "-c", ii).start()
-}
+    }
 }

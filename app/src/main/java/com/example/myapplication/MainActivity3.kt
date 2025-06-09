@@ -16,7 +16,11 @@ class MainActivity3 : Activity() {
                     val i1 = data.authority?:""
                     var esd= (data.path?:"").drop(1)
                     OpenLink.fromDb(db, i1).apply {
-                        if (change2.isNotEmpty()) esd = esd.replace(Regex(change2[0]),change2[1])
+                        if (change2.isNotEmpty()) {
+                            val lines = change2.split("\n")
+                            esd = esd.replace(Regex(lines[0]),lines[1])
+
+                        }
                         if (uri != "") uri = uri.replace("{key}", esd)
                         if (keys != "") datas = datas.replace("{key}", esd)
                         openLink(this)
@@ -32,7 +36,10 @@ class MainActivity3 : Activity() {
                         var key =data.toString()
                         if( ksh[i]!=""  && key.contains(Regex(ksh[i]))) {
                             OpenLink.fromDb(db, ksh[i + 1]).apply {
-                                if (change2.isNotEmpty()) key = key.replace(Regex(change2[0]),change2[1])
+                                if (change2.isNotEmpty()) {
+                                    val lines = change2.split("\n")
+                                    key = key.replace(Regex(lines[0]),lines[1])
+                                }
                                 if (uri != "") uri = uri.replace("{key}", key)
                                 if (keys != "") datas = datas.replace("{key}",key)
                                 openLink(this)
