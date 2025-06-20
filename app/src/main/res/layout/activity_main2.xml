@@ -7,49 +7,49 @@
     android:orientation="vertical"
     tools:context=".MainActivity2">
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/i"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="名称" />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/i5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="URL匹配（支持正则）" />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/i6"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="替换规则" />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/i1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="包名" />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/i2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="活动名" />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/i7"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="uri" />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/i3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="extra 键名(一行一个)" />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/i4"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

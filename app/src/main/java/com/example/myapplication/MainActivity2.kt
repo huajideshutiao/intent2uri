@@ -3,8 +3,8 @@ package com.example.myapplication
 import android.app.Activity
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
-import com.google.android.material.textfield.TextInputEditText
 
 class MainActivity2 : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,14 +15,14 @@ class MainActivity2 : Activity() {
         val button2 = findViewById<Button>(R.id.button2)
             button2.visibility = Button.VISIBLE
             button.visibility = Button.VISIBLE
-        val i1 = findViewById<TextInputEditText>(R.id.i1)
-        val i2 = findViewById<TextInputEditText>(R.id.i2)
-        val i3 = findViewById<TextInputEditText>(R.id.i3)
-        val i4 = findViewById<TextInputEditText>(R.id.i4)
-        val i5 = findViewById<TextInputEditText>(R.id.i5)
-        val i6 = findViewById<TextInputEditText>(R.id.i6)
-        val i7 = findViewById<TextInputEditText>(R.id.i7)
-        val i = findViewById<TextInputEditText>(R.id.i)
+        val i1 = findViewById<EditText>(R.id.i1)
+        val i2 = findViewById<EditText>(R.id.i2)
+        val i3 = findViewById<EditText>(R.id.i3)
+        val i4 = findViewById<EditText>(R.id.i4)
+        val i5 = findViewById<EditText>(R.id.i5)
+        val i6 = findViewById<EditText>(R.id.i6)
+        val i7 = findViewById<EditText>(R.id.i7)
+        val i = findViewById<EditText>(R.id.i)
         val show = findViewById<TextView>(R.id.show)
 
 
