@@ -2,59 +2,48 @@ package com.example.myapplication
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 
 
 class MainActivity3 : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val list = getSharedPreferences("list", MODE_PRIVATE)
-        val data = intent.data
-        val db = DbHelper(this).writableDatabase
-        when (data!!.scheme) {
-                "kkp" -> {
-                    val i1 = data.authority?:""
-                    var esd= (data.path?:"").drop(1)
-                    OpenLink.fromDb(db, i1).apply {
-                        if (change2.isNotEmpty()) {
-                            val lines = change2.split("\n")
-                            esd = esd.replace(Regex(lines[0]),lines[1])
+    private val db by lazy { DbHelper(this).readableDatabase }
+    private val list by lazy {  getSharedPreferences("list", MODE_PRIVATE) }
+    private val httpData by lazy { item(db, "host") }
+    private fun open(data : Uri){
+        when (data.scheme) {
+            "kkp" -> {
+                val i1 = data.authority!!
+                val esd= (data.path?:"").drop(1)
+                openLink(esd,OpenLink.fromDb(db, i1))
+            }
 
-                        }
-                        if (uri != "") uri = uri.replace("{key}", esd)
-                        if (keys != "") datas = datas.replace("{key}", esd)
-                        openLink(this)
-                }
-
-                }
-
-                "http", "https" -> {
-
-                    var staut = true
-                    val ksh = item(db, "host")
-                    for(i in ksh.indices step 2) {
-                        var key =data.toString()
-                        if( ksh[i]!=""  && key.contains(Regex(ksh[i]))) {
-                            OpenLink.fromDb(db, ksh[i + 1]).apply {
-                                if (change2.isNotEmpty()) {
-                                    val lines = change2.split("\n")
-                                    key = key.replace(Regex(lines[0]),lines[1])
-                                }
-                                if (uri != "") uri = uri.replace("{key}", key)
-                                if (keys != "") datas = datas.replace("{key}",key)
-                                openLink(this)
-                            }
-                            staut = false
-                            break
-                        }
+            "http", "https" -> {
+                var staut = true
+                val key =data.toString()
+                for(i in httpData.indices step 2) {
+                    if( httpData[i]!=""  && key.contains(Regex(httpData[i]))) {
+                        openLink(key,OpenLink.fromDb(db, httpData[i + 1]))
+                        staut = false
+                        break
                     }
-                    if (staut){
-                        val browser = Intent(Intent.ACTION_VIEW, data)
-                        browser.setPackage(list.getString("browser", ""))
-                        startActivity(browser)
-                    }
+                }
+                if (staut){
+                    val browser = Intent(Intent.ACTION_VIEW, data)
+                    browser.setPackage(list.getString("browser", ""))
+                    startActivity(browser)
                 }
             }
+        }
         finish()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        intent.data?.let { open(it) }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        intent?.data?.let { open(it) }
     }
 }

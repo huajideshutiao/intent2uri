@@ -16,48 +16,45 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.GridView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 
-
 class MainActivity : Activity() {
-
     class GridAdapter(
         private val context0: Activity,
         private val data0: List<String>
     ) : BaseAdapter() {
-
         override fun getCount() = data0.size / 2
-
         override fun getItem(position: Int) = data0[position]
-
         override fun getItemId(position: Int) = position.toLong()
-
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-            val textView = TextView(context0)
+            var textView : TextView
+            if (convertView == null){
+                textView = TextView(parent!!.context).apply {
+                    textSize = 20f
+                    gravity = Gravity.CENTER
+                    val borderDrawable = GradientDrawable()
+                    borderDrawable.shape = GradientDrawable.RECTANGLE
+                    borderDrawable.setStroke(2, Color.BLACK)
+                    borderDrawable.cornerRadius = 8f
+                    background = borderDrawable
+                    setPadding(8, 8, 8, 8)
+                }
+            }else{
+                textView = convertView as TextView
+            }
             textView.apply {
                 text = data0[position * 2]
-                textSize = 20f
-                gravity = Gravity.CENTER
-                val borderDrawable = GradientDrawable()
-                borderDrawable.shape = GradientDrawable.RECTANGLE
-                borderDrawable.setStroke(2, Color.BLACK)
-                borderDrawable.cornerRadius = 8f
-                background = borderDrawable
-                setPadding(8, 8, 8, 8)
                 setOnClickListener {
-                    //启动activity2并传入position
                     val intent = Intent(context, MainActivity2::class.java)
                     intent.putExtra("item", data0[2 * position + 1])
-                    //io.launch(intent)
                     context0.startActivityForResult(intent, 1)
                 }
             }
             return textView
         }
     }
-
+    private val db by lazy { DbHelper(this).writableDatabase}
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -74,23 +71,7 @@ class MainActivity : Activity() {
             browserList
         }
 
-        val db = DbHelper(this).writableDatabase
         setContentView(R.layout.activity_main)
-
-        val results = findViewById<ScrollView>(R.id.main)
-        results.setOnApplyWindowInsetsListener { v, insets ->
-            val statusBarHeight = insets.systemWindowInsetTop
-            v.setPadding(
-                v.paddingLeft,
-                v.paddingTop + statusBarHeight,
-                v.paddingRight,
-                v.paddingBottom
-            )
-            insets
-        }
-        results.requestApplyInsets()
-
-
         val button1 = findViewById<Button>(R.id.button1)
         val i1 = findViewById<EditText>(R.id.i1)
         val i2 = findViewById<EditText>(R.id.i2)
@@ -141,25 +122,14 @@ class MainActivity : Activity() {
                     i7.text.toString()
                 ), db
             )
-            i.setText("")
-            i1.setText("")
-            i2.setText("")
-            i3.setText("")
-            i4.setText("")
-            i5.setText("")
-            i6.setText("")
-            i7.setText("")
+            listOf(i, i1, i2, i3, i4, i5, i6, i7).forEach { it.setText("") }
             adp.adapter = GridAdapter(this, item(db, "name"))
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
         val adp = findViewById<GridView>(R.id.startlist)
-
-
-        val db = DbHelper(this).writableDatabase
         adp.adapter = GridAdapter(this, item(db, "name"))
-
+        super.onActivityResult(requestCode, resultCode, data)
     }
 }

@@ -5,7 +5,16 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-data class OpenLink(val name: String = "", val host: String, val pp: String, val activity: String, val keys: String, var datas: String, val change2: String, var uri: String) {
+data class OpenLink(
+    val name: String = "",
+    val host: String,
+    val pp: String,
+    val activity: String,
+    val keys: String,
+    var datas: String,
+    val change2: String,
+    var uri: String
+) {
 
     companion object {
         fun fromDb(db: SQLiteDatabase, id: String): OpenLink {
@@ -23,7 +32,7 @@ data class OpenLink(val name: String = "", val host: String, val pp: String, val
             return OpenLink(name, host, pp, activity, keys, datas, change2, uri)
         }
 
-        fun toDb(openLink: OpenLink,db: SQLiteDatabase, id :String = "") {
+        fun toDb(openLink: OpenLink, db: SQLiteDatabase, id: String = "") {
             val hy = ContentValues().apply {
                 put("name", openLink.name)
                 put("host", openLink.host)
@@ -34,7 +43,7 @@ data class OpenLink(val name: String = "", val host: String, val pp: String, val
                 put("change2", openLink.change2)
                 put("uri", openLink.uri)
             }
-            if (id == "")db.insert("list", null, hy)
+            if (id == "") db.insert("list", null, hy)
             else db.update("list", hy, "id = ?", arrayOf(id))
         }
     }
@@ -51,32 +60,51 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "list.db", null, 2)
     }
 }
 
-fun item(db: SQLiteDatabase,column:String) : List<String> {
-    val cursor = db.query("list", arrayOf("id",column), null, null, null, null, null)
-    val lk :MutableList<String> = mutableListOf()
-    while (cursor.moveToNext()) {
-        val name = cursor.getString(cursor.getColumnIndexOrThrow(column))
-        lk.add(name)
-        val id = cursor.getString(cursor.getColumnIndexOrThrow("id"))
-        lk.add(id)
+fun item(db: SQLiteDatabase, column: String): List<String> {
+
+    val cursor = db.query(
+        "list",
+        arrayOf("id", column),
+        null,
+        null,
+        null,
+        null,
+        null
+    )
+
+    val lk = mutableListOf<String>()
+    if (cursor.moveToFirst()) {
+        do {
+            val name = cursor.getString(cursor.getColumnIndexOrThrow(column))
+            val id = cursor.getInt(cursor.getColumnIndexOrThrow("id")).toString()
+            lk.add(name)
+            lk.add(id)
+        } while (cursor.moveToNext())
     }
     cursor.close()
     return lk
 }
 
-fun openLink(openLink: OpenLink) {
-    var ii = "am start -a android.intent.action.VIEW"
+fun openLink(keyWord: String, openLink: OpenLink) {
+    val ii = StringBuilder("am start -a android.intent.action.VIEW")
     openLink.apply {
-        if (pp != "") ii += " -n $pp"
-        if (activity != "") ii += '/' + activity
-        if (uri != "") ii += " -d " + uri
+        var keyWord = keyWord
+        if (change2.isNotEmpty()) {
+            val lines = change2.split("\n")
+            keyWord = keyWord.replace(Regex(lines[0]), lines[1])
+        }
+        if (keys != "") datas = datas.replace("{key}", keyWord)
+
+        if (pp != "") ii.append(" -n $pp")
+        if (activity != "") ii.append("/$activity")
+        if (uri != "") ii.append(" -d " + uri.replace("{key}", keyWord))
         if (keys != "") {
             val ii3 = keys.split("\n")
             val ii4 = datas.split("\n")
             for (df in ii3.indices) {
-                ii += " --e${ii3[df].replaceRange(1, 2, " '")}' '${ii4[df]}'"
+                ii.append(" --e${ii3[df].replaceRange(1, 2, " '")}' '${ii4[df]}'")
             }
         }
-        ProcessBuilder("su", "-c", ii).start()
+        ProcessBuilder("su", "-c", ii.toString()).start()
     }
 }
