@@ -6,7 +6,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 class MainActivity2 : Activity() {
-    private val db by lazy { DbHelper(this).writableDatabase}
+    private val db = (application as InitApp).db
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main2)

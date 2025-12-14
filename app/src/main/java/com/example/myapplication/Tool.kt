@@ -49,7 +49,7 @@ data class OpenLink(
     }
 }
 
-class DbHelper(context: Context) : SQLiteOpenHelper(context, "list.db", null, 2) {
+class DbHelper(context: Context) : SQLiteOpenHelper(context.applicationContext, "list.db", null, 2) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE list (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,host TEXT, package TEXT, activity TEXT , keys TEXT, datas TEXT, change2 TEXT, uri TEXT)")
     }
@@ -59,7 +59,6 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "list.db", null, 2)
         db.execSQL("ALTER TABLE list ADD uri TEXT")
     }
 }
-
 fun item(db: SQLiteDatabase, column: String): List<String> {
 
     val cursor = db.query(

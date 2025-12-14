@@ -7,8 +7,7 @@ import android.os.Bundle
 
 
 class MainActivity3 : Activity() {
-    private val db by lazy { DbHelper(this).readableDatabase }
-    private val list by lazy {  getSharedPreferences("list", MODE_PRIVATE) }
+    private val db = (application as InitApp).db
     private val httpData by lazy { item(db, "host") }
     private fun open(data : Uri){
         when (data.scheme) {
@@ -30,7 +29,7 @@ class MainActivity3 : Activity() {
                 }
                 if (staut){
                     val browser = Intent(Intent.ACTION_VIEW, data)
-                    browser.setPackage(list.getString("browser", ""))
+                    browser.setPackage((application as InitApp).list.getString("browser", ""))
                     startActivity(browser)
                 }
             }

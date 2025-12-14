@@ -22,10 +22,10 @@ import android.widget.Toast
 class MainActivity : Activity() {
     class GridAdapter(
         private val context0: Activity,
-        private val data0: List<String>
+        private val data: List<String>
     ) : BaseAdapter() {
-        override fun getCount() = data0.size / 2
-        override fun getItem(position: Int) = data0[position]
+        override fun getCount() = data.size / 2
+        override fun getItem(position: Int) = data[position]
         override fun getItemId(position: Int) = position.toLong()
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
             var textView : TextView
@@ -44,21 +44,21 @@ class MainActivity : Activity() {
                 textView = convertView as TextView
             }
             textView.apply {
-                text = data0[position * 2]
+                text = data[position * 2]
                 setOnClickListener {
                     val intent = Intent(context, MainActivity2::class.java)
-                    intent.putExtra("item", data0[2 * position + 1])
+                    intent.putExtra("item", data[2 * position + 1])
                     context0.startActivityForResult(intent, 1)
                 }
             }
             return textView
         }
     }
-    private val db by lazy { DbHelper(this).writableDatabase}
+    private val db = (application as InitApp).db
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val list = getSharedPreferences("list", MODE_PRIVATE)
+        val list = (application as InitApp).list
 
         val browserList: List<ResolveInfo> = run {
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.bing.com"))
@@ -122,7 +122,7 @@ class MainActivity : Activity() {
                     i7.text.toString()
                 ), db
             )
-            listOf(i, i1, i2, i3, i4, i5, i6, i7).forEach { it.setText("") }
+            listOf(i, i1, i2, i3, i4, i5, i6, i7).forEach { it.clearComposingText() }
             adp.adapter = GridAdapter(this, item(db, "name"))
         }
     }
