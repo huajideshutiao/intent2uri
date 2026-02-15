@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.shutiao.flow
 
 import android.app.Activity
 import android.content.Intent
@@ -6,7 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 
 
-class MainActivity3 : Activity() {
+class JumpActivity : Activity() {
     private val db by lazy { DbHelper.getInstance(this).readableDatabase }
     private val list by lazy {  getSharedPreferences("list", MODE_PRIVATE) }
     private val httpData by lazy { item(db, "host") }
@@ -40,10 +40,28 @@ class MainActivity3 : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        intent.data?.let { open(it) }
+        handleIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
-        intent?.data?.let { open(it) }
+        intent?.let { handleIntent(it) }
+    }
+
+    private fun handleIntent(intent: Intent) {
+        when (intent.action) {
+            Intent.ACTION_VIEW -> {
+                intent.data?.let { open(it) }
+            }
+            Intent.ACTION_SEND -> {
+                if (intent.type?.startsWith("text/") == true) {
+                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                    text?.let {
+                        // 处理分享的文本内容
+                        val uri = Uri.parse(it)
+                        open(uri)
+                    }
+                }
+            }
+        }
     }
 }

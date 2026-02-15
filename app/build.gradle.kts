@@ -1,4 +1,4 @@
-//import org.jetbrains.kotlin.storage.CacheResetOnProcessCanceled.enabled
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
@@ -14,18 +14,20 @@ android {
             storePassword = "_1xcvFN3-zfxt9KP"
         }
     }
-    namespace = "com.example.myapplication"
+    namespace = "com.shutiao.flow"
     compileSdk = 36
-
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.shutiao.flow"
         minSdk = 24
         //noinspection OldTargetApi
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    
+    buildFeatures {
+        buildConfig = true
+        aidl = true
     }
 
     buildTypes {
@@ -40,22 +42,17 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
-}
-//    buildFeatures {
-//        viewBinding = true
-//    }
 }
 
 dependencies {
-//    androidTestImplementation(libs.androidx.junit)
-//    androidTestImplementation(libs.androidx.espresso.core)
-    // 将这一行加入到 app/build.gradle.kts 的 dependencies 中（Kotlin DSL）
-    //implementation(libs.rhino)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 }

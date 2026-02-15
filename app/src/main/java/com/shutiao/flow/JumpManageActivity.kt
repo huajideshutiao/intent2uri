@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.shutiao.flow
 
 import android.app.Activity
 import android.content.Intent
@@ -19,7 +19,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 
-class MainActivity : Activity() {
+class JumpManageActivity : Activity() {
     class GridAdapter(
         private val context0: Activity,
         private val data0: List<String>
@@ -43,14 +43,14 @@ class MainActivity : Activity() {
             }else{
                 textView = convertView as TextView
             }
-            textView.apply {
-                text = data0[position * 2]
-                setOnClickListener {
-                    val intent = Intent(context, MainActivity2::class.java)
-                    intent.putExtra("item", data0[2 * position + 1])
-                    context0.startActivityForResult(intent, 1)
-                }
+
+            textView.text = data0[position * 2]
+            textView.setOnClickListener {
+                val intent = Intent(parent!!.context, JumpEditActivity::class.java)
+                intent.putExtra("item", data0[2 * position + 1])
+                context0.startActivityForResult(intent, 1)
             }
+
             return textView
         }
     }
@@ -71,7 +71,7 @@ class MainActivity : Activity() {
             browserList
         }
 
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_jump_manage)
         val save = findViewById<Button>(R.id.save)
         val i1 = findViewById<EditText>(R.id.packageName)
         val i2 = findViewById<EditText>(R.id.activity)

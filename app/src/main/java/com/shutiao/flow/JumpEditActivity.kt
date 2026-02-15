@@ -1,15 +1,15 @@
-package com.example.myapplication
+package com.shutiao.flow
 
 import android.app.Activity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-class MainActivity2 : Activity() {
+class JumpEditActivity : Activity() {
     private val db by lazy { DbHelper.getInstance(this).writableDatabase}
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main2)
+        setContentView(R.layout.activity_jump_edit)
         val button = findViewById<Button>(R.id.start)
         val button1 = findViewById<Button>(R.id.save)
         val button2 = findViewById<Button>(R.id.delete)

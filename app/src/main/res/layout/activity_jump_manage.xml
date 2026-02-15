@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".JumpManageActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,7 +22,7 @@
         </GridView>
 
         <include
-            layout="@layout/activity_main2"
+            layout="@layout/activity_jump_edit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 

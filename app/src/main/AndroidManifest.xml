@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET"/>
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -9,21 +10,18 @@
         </intent>
     </queries>
     <application
-        android:name=".InitApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="intent转uri"
-        android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.NoActionBar"
-        tools:targetApi="31">
+        android:label="流转"
+        android:theme="@style/AppTheme"
+        tools:targetApi="35">
         <activity
-            android:name=".MainActivity2"
-            android:exported="false" />
+            android:name=".JumpEditActivity"/>
         <activity
-            android:name=".MainActivity3"
+            android:name=".JumpActivity"
             android:exported="true"
             android:excludeFromRecents="true"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -34,17 +32,38 @@
                 <data android:scheme="http" />
                 <data android:scheme="https" />
             </intent-filter>
-
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+            </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name=".JumpManageActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
+        <activity
+            android:name=".SoutuResultActivity"/>
+        <activity
+            android:name=".SoutuActivity"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
     </application>
-
 </manifest>
