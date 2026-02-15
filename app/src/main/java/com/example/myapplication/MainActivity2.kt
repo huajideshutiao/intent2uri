@@ -6,23 +6,23 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 class MainActivity2 : Activity() {
-    private val db by lazy { DbHelper(this).writableDatabase}
+    private val db by lazy { DbHelper.getInstance(this).writableDatabase}
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main2)
-        val button = findViewById<Button>(R.id.button)
-        val button1 = findViewById<Button>(R.id.button1)
-        val button2 = findViewById<Button>(R.id.button2)
+        val button = findViewById<Button>(R.id.start)
+        val button1 = findViewById<Button>(R.id.save)
+        val button2 = findViewById<Button>(R.id.delete)
         button2.visibility = Button.VISIBLE
         button.visibility = Button.VISIBLE
-        val i1 = findViewById<EditText>(R.id.i1)
-        val i2 = findViewById<EditText>(R.id.i2)
-        val i3 = findViewById<EditText>(R.id.i3)
-        val i4 = findViewById<EditText>(R.id.i4)
-        val i5 = findViewById<EditText>(R.id.i5)
-        val i6 = findViewById<EditText>(R.id.i6)
-        val i7 = findViewById<EditText>(R.id.i7)
-        val i = findViewById<EditText>(R.id.i)
+        val i1 = findViewById<EditText>(R.id.packageName)
+        val i2 = findViewById<EditText>(R.id.activity)
+        val i3 = findViewById<EditText>(R.id.extra_key)
+        val i4 = findViewById<EditText>(R.id.extra_value)
+        val i5 = findViewById<EditText>(R.id.matchRule)
+        val i6 = findViewById<EditText>(R.id.replaceRule)
+        val i7 = findViewById<EditText>(R.id.uri)
+        val i = findViewById<EditText>(R.id.name)
         val show = findViewById<TextView>(R.id.show)
         val item = intent.extras?.getString("item", "")
 

@@ -49,7 +49,19 @@ data class OpenLink(
     }
 }
 
-class DbHelper(context: Context) : SQLiteOpenHelper(context, "list.db", null, 2) {
+class DbHelper private constructor(context: Context) : SQLiteOpenHelper(context, "list.db", null, 2) {
+    
+    companion object {
+        @Volatile
+        private var instance: DbHelper? = null
+        
+        fun getInstance(context: Context): DbHelper {
+            return instance ?: synchronized(this) {
+                instance ?: DbHelper(context.applicationContext).also { instance = it }
+            }
+        }
+    }
+    
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE list (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,host TEXT, package TEXT, activity TEXT , keys TEXT, datas TEXT, change2 TEXT, uri TEXT)")
     }
@@ -95,14 +107,15 @@ fun openLink(keyWord: String, openLink: OpenLink) {
         }
         if (keys != "") datas = datas.replace("{key}", keyWord)
 
-        if (pp != "") ii.append(" -n $pp")
-        if (activity != "") ii.append("/$activity")
-        if (uri != "") ii.append(" -d " + uri.replace("{key}", keyWord))
+        if (pp != "") ii.append(" -n ").append(pp)
+        if (activity != "") ii.append("/").append(activity)
+        if (uri != "") ii.append(" -d ").append(uri.replace("{key}", keyWord))
         if (keys != "") {
             val ii3 = keys.split("\n")
             val ii4 = datas.split("\n")
             for (df in ii3.indices) {
-                ii.append(" --e${ii3[df].replaceRange(1, 2, " '")}' '${ii4[df]}'")
+                ii.append(" --e").append(ii3[df].replaceRange(1, 2, " '"))
+                    .append(" '").append(ii4[df]).append('\'')
             }
         }
         ProcessBuilder("su", "-c", ii.toString()).start()

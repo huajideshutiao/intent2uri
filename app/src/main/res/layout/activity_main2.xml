@@ -9,68 +9,68 @@
     tools:context=".MainActivity2">
 
         <EditText
-            android:id="@+id/i"
+            android:id="@+id/name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="名称" />
 
         <EditText
-            android:id="@+id/i5"
+            android:id="@+id/matchRule"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="URL匹配（支持正则）" />
 
         <EditText
-            android:id="@+id/i6"
+            android:id="@+id/replaceRule"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="替换规则" />
 
         <EditText
-            android:id="@+id/i1"
+            android:id="@+id/packageName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="包名" />
 
         <EditText
-            android:id="@+id/i2"
+            android:id="@+id/activity"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="活动名" />
 
         <EditText
-            android:id="@+id/i7"
+            android:id="@+id/uri"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="uri" />
 
         <EditText
-            android:id="@+id/i3"
+            android:id="@+id/extra_key"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="extra 键名(一行一个)" />
 
         <EditText
-            android:id="@+id/i4"
+            android:id="@+id/extra_value"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="extra 值(一行一个)" />
 
         <Button
-            android:id="@+id/button"
+            android:id="@+id/start"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="启动"
             android:visibility="gone" />
 
         <Button
-            android:id="@+id/button1"
+            android:id="@+id/save"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="保存" />
 
         <Button
-            android:id="@+id/button2"
+            android:id="@+id/delete"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="删除"

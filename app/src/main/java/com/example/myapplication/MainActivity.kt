@@ -54,7 +54,7 @@ class MainActivity : Activity() {
             return textView
         }
     }
-    private val db by lazy { DbHelper(this).writableDatabase}
+    private val db by lazy { DbHelper.getInstance(this).writableDatabase}
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -72,31 +72,31 @@ class MainActivity : Activity() {
         }
 
         setContentView(R.layout.activity_main)
-        val button1 = findViewById<Button>(R.id.button1)
-        val i1 = findViewById<EditText>(R.id.i1)
-        val i2 = findViewById<EditText>(R.id.i2)
-        val i3 = findViewById<EditText>(R.id.i3)
-        val i4 = findViewById<EditText>(R.id.i4)
-        val i5 = findViewById<EditText>(R.id.i5)
-        val i6 = findViewById<EditText>(R.id.i6)
-        val i7 = findViewById<EditText>(R.id.i7)
-        val i = findViewById<EditText>(R.id.i)
+        val save = findViewById<Button>(R.id.save)
+        val i1 = findViewById<EditText>(R.id.packageName)
+        val i2 = findViewById<EditText>(R.id.activity)
+        val i3 = findViewById<EditText>(R.id.extra_key)
+        val i4 = findViewById<EditText>(R.id.extra_value)
+        val i5 = findViewById<EditText>(R.id.matchRule)
+        val i6 = findViewById<EditText>(R.id.replaceRule)
+        val i7 = findViewById<EditText>(R.id.uri)
+        val i = findViewById<EditText>(R.id.name)
         val adp = findViewById<GridView>(R.id.startlist)
         val aadp = findViewById<LinearLayout>(R.id.applist)
 
-        for (idfec in browserList) {
-            val tyt = TextView(this)
-            val oo = idfec.activityInfo
-            tyt.text = oo.applicationInfo.loadLabel(packageManager)
-            tyt.layoutParams = ViewGroup.LayoutParams(200, 200)
-            tyt.gravity = Gravity.CENTER
+        for (i in browserList) {
+            val textView = TextView(this)
+            val oo = i.activityInfo
+            textView.text = oo.applicationInfo.loadLabel(packageManager)
+            textView.layoutParams = ViewGroup.LayoutParams(200, 200)
+            textView.gravity = Gravity.CENTER
             val borderDrawable = GradientDrawable()
             borderDrawable.shape = GradientDrawable.RECTANGLE
             borderDrawable.setStroke(2, Color.BLACK)
             borderDrawable.cornerRadius = 8f
-            tyt.background = borderDrawable
-            tyt.setPadding(8, 8, 8, 8)
-            tyt.setOnClickListener {
+            textView.background = borderDrawable
+            textView.setPadding(8, 8, 8, 8)
+            textView.setOnClickListener {
                 list.edit().putString("browser", oo.packageName).apply()
                 Toast.makeText(
                     this,
@@ -104,12 +104,12 @@ class MainActivity : Activity() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            aadp.addView(tyt)
+            aadp.addView(textView)
         }
 
         adp.adapter = GridAdapter(this, item(db, "name"))
 
-        button1.setOnClickListener {
+        save.setOnClickListener {
             OpenLink.toDb(
                 OpenLink(
                     i.text.toString(),

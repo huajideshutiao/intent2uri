@@ -7,7 +7,7 @@ import android.os.Bundle
 
 
 class MainActivity3 : Activity() {
-    private val db by lazy { DbHelper(this).readableDatabase }
+    private val db by lazy { DbHelper.getInstance(this).readableDatabase }
     private val list by lazy {  getSharedPreferences("list", MODE_PRIVATE) }
     private val httpData by lazy { item(db, "host") }
     private fun open(data : Uri){
