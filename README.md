@@ -1,14 +1,12 @@
-# intent-uri
+# flow
 
-通过uri访问活动
+一个支持搜图和url"重定向"的小工具，支持Shizuku
 
-个人学习成果，代码很烂
+![1000038109](https://github.com/user-attachments/assets/483f96bf-9be7-489e-9447-adf004f34497)
+如图所示，其中替换规则按行分割，uri,extra中允许使用 {key} 引用替换规则执行后获得的关键字，extra键值按行对应。
 
-目前支持两种功能:
+![1000038110](https://github.com/user-attachments/assets/38e334fa-fe27-4783-94d9-3afa33cad7d8)
+可以通过三种方式使用规则，将软件设为默认浏览器可以匹配url(使用URL匹配规则)，通过分享菜单分享到软件，或者通过kkp://id/key引用指定条目，前提是规则没有URL匹配规则。
 
-1. 通过 `kkp://id/关键词` 打开保存的规则
-2. 将 http 协议的 URL 作为 参数打开活动
-
-允许在uri和extra键名中使用{key}关键字，会将其替换为替换规则处理后的结果。如果没有替换规则，在http链接的情况下以完整url作为key
-
-只支持 root 下使用
+![1000038111](https://github.com/user-attachments/assets/f9df6c25-8cf0-4250-8e79-eba1e0fb0981)
+对于搜图功能，目前支持图中7种。
