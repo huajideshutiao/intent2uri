@@ -1,0 +1,40 @@
+name: Debug Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  debug-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'  # 根据你的项目调整版本
+        distribution: 'temurin'
+        
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Debug Build with Gradle
+      run: ./gradlew build --debug --stacktrace  # 使用build任务，添加debug参数
+      # 或者如果你有自定义的debugBuild任务：
+      # run: ./gradlew debugBuild --debug --stacktrace
+      
+    - name: Upload build logs
+      if: always()  # 即使失败也上传日志
+      uses: actions/upload-artifact@v4
+      with:
+        name: gradle-build-logs
+        path: |
+          **/build/reports/
+          **/*.log
+        retention-days: 7
