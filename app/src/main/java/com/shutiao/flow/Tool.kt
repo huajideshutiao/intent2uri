@@ -153,9 +153,11 @@ fun openLink(keyWord: String, openLink: OpenLink) {
                     object : Shizuku.OnRequestPermissionResultListener {
                         override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
                             if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                                try{
                                 Shizuku.bindUserService(Constant.args, conn)
                             } else ProcessBuilder("su", "-c", command).start()
-                            Shizuku.removeRequestPermissionResultListener(this)
+                            }finally{
+                                Shizuku.removeRequestPermissionResultListener(this)}
                         }
                     }
                 )
