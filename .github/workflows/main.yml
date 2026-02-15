@@ -1,40 +1,56 @@
-name: Debug Build
+name: Android Debug Build
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main, master, develop ]
-  workflow_dispatch:  # 允许手动触发
+    branches: [ main, develop ]
 
 jobs:
-  debug-build:
+  android-debug-build:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
+    - name: Checkout
       uses: actions/checkout@v4
       
-    - name: Set up JDK
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '17'  # 根据你的项目调整版本
+        java-version: '17'
         distribution: 'temurin'
         
-    - name: Grant execute permission for gradlew
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+        
+    - name: Grant execute permission
       run: chmod +x gradlew
       
-    - name: Debug Build with Gradle
-      run: ./gradlew build --debug --stacktrace  # 使用build任务，添加debug参数
-      # 或者如果你有自定义的debugBuild任务：
-      # run: ./gradlew debugBuild --debug --stacktrace
-      
-    - name: Upload build logs
-      if: always()  # 即使失败也上传日志
+    - name: Cache Gradle
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          ~/.android/build-cache
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        
+    - name: Debug Build Android
+      run: |
+        ./gradlew assembleDebug
+        
+    - name: Upload APK
+      if: success()
       uses: actions/upload-artifact@v4
       with:
-        name: gradle-build-logs
+        name: debug-apk
+        path: app/build/outputs/apk/debug/*.apk
+        
+    - name: Upload build reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-reports
         path: |
           **/build/reports/
-          **/*.log
-        retention-days: 7
+          **/build/outputs/
