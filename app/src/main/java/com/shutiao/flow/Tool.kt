@@ -4,16 +4,16 @@ import android.content.ComponentName
 import android.content.ContentValues
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.database.sqlite.SQLiteDatabase
 import android.os.IBinder
 import android.util.Base64
+import kotlinx.serialization.Serializable
 import org.json.JSONArray
 import org.json.JSONObject
 import rikka.shizuku.Shizuku
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-
+@Serializable
 data class OpenLink(
     val name: String,
     val description: String,
@@ -27,10 +27,9 @@ data class OpenLink(
 ) {
     companion object {
         fun fromDb(id: String): OpenLink {
-            val db = App.dbHelper.readableDatabase
-            val cursor = db.query("list", null, "id = ?", arrayOf(id), null, null, null)
+            val cursor = App.dbHelper.query("list", null, "id = ?", arrayOf(id), null, null, null)
             cursor.moveToFirst()
-            cursor.use { return OpenLink(
+            return cursor.use { OpenLink(
                 cursor.getString(cursor.getColumnIndexOrThrow("name")),
                 cursor.getString(cursor.getColumnIndexOrThrow("description")),
                 cursor.getString(cursor.getColumnIndexOrThrow("matchRule")),
@@ -41,24 +40,23 @@ data class OpenLink(
                 cursor.getString(cursor.getColumnIndexOrThrow("extraKey")),
                 cursor.getString(cursor.getColumnIndexOrThrow("extraValue"))
             ) }
-
         }
+    }
 
-        fun toDb(openLink: OpenLink, db: SQLiteDatabase, id: String? = "") {
-            val item = ContentValues().apply {
-                put("name", openLink.name)
-                put("description", openLink.description)
-                put("matchRule", openLink.matchRule)
-                put("replaceRule", openLink.replaceRule)
-                put("packageName", openLink.packageName)
-                put("activity", openLink.activity)
-                put("uri", openLink.uri)
-                put("extraKey", openLink.extraKey)
-                put("extraValue", openLink.extraValue)
-            }
-            if (id == "") db.insert("list", null, item)
-            else db.update("list", item, "id = ?", arrayOf(id))
+    fun toDb(id: String? = "") {
+        val item = ContentValues().apply {
+            put("name", name)
+            put("description", description)
+            put("matchRule", matchRule)
+            put("replaceRule", replaceRule)
+            put("packageName", packageName)
+            put("activity", activity)
+            put("uri", uri)
+            put("extraKey", extraKey)
+            put("extraValue", extraValue)
         }
+        if (id.isNullOrEmpty()) App.dbHelper.insert("list", null, item)
+        else App.dbHelper.update("list", item, "id = ?", arrayOf(id))
     }
 
     fun start(keyWord: String) {
@@ -117,8 +115,7 @@ data class OpenLink(
 }
 
 fun item(column: String): Pair<List<String>, List<String>> {
-    val db = App.dbHelper.readableDatabase
-    val cursor = db.query(
+    val cursor = App.dbHelper.query(
         "list",
         arrayOf("id", column),
         null,

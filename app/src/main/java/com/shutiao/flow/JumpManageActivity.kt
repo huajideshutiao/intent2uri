@@ -1,6 +1,7 @@
 package com.shutiao.flow
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
@@ -13,10 +14,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.Button
+import android.widget.EditText
 import android.widget.GridView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import rikka.shizuku.SystemServiceHelper.getSystemService
 
 class JumpManageActivity : Activity() {
     class GridAdapter(
@@ -49,34 +54,32 @@ class JumpManageActivity : Activity() {
             textView.text = nameList[position]
             textView.setOnClickListener {
                 val intent = Intent(parent.context, JumpEditActivity::class.java)
-                intent.putExtra("item", idList[position])
-                context.startActivityForResult(intent, 1)
+                intent.putExtra("id", idList[position])
+                context.startActivityForResult(intent, 0)
             }
             // 长按删除功能
             textView.setOnLongClickListener {
-
                 popupMenu.setOnMenuItemClickListener { menuItem ->
                     when (menuItem.itemId) {
                         R.id.delete -> {
-                            val db = App.dbHelper.writableDatabase
-                            db.delete("list", "id = ?", arrayOf(idList[position]))
+                            App.dbHelper.delete("list", "id = ?", arrayOf(idList[position]))
                             Toast.makeText(context, "已删除", Toast.LENGTH_SHORT).show()
                             context.recreate()
                             true
                         }
-
                         R.id.copy -> {
-                            // 复制功能暂不实现
+                            val json = Json.encodeToString(OpenLink.fromDb(idList[position]))
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("json", json))
+                            Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
                             true
                         }
-
                         else -> false
                     }
                 }
                 popupMenu.show()
                 true
             }
-
             return textView
         }
     }
@@ -125,15 +128,37 @@ class JumpManageActivity : Activity() {
         // 设置添加按钮的点击事件
         val addButton = findViewById<Button>(R.id.add)
         addButton.setOnClickListener {
-            val intent = Intent(this@JumpManageActivity, JumpEditActivity::class.java)
-            intent.putExtra("item", "")
-            startActivityForResult(intent, 1)
+            startActivityForResult(Intent(this, JumpEditActivity::class.java).putExtra("id", ""), 0)
+        }
+        addButton.setOnLongClickListener {
+                //允许导入json，显示一个对话框输入
+                val dialog = AlertDialog.Builder(this)
+                dialog.setTitle("导入快捷方式")
+                dialog.setMessage("请输入快捷方式的json字符串")
+                val input = EditText(this)
+                dialog.setView(input)
+                dialog.setPositiveButton("导入") { _, _ ->
+                    val json = input.text.toString()
+                    try {
+                        val link = Json.decodeFromString<OpenLink>(json)
+                        link.toDb()
+                        Toast.makeText(this, "已导入", Toast.LENGTH_SHORT).show()
+                        this@JumpManageActivity.recreate()
+                    } catch (_: Exception) {
+                        Toast.makeText(this, "导入失败", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                dialog.setNegativeButton("取消") { _, _ -> }
+                dialog.show()
+
+                true
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        val adp = findViewById<GridView>(R.id.startlist)
-        adp.adapter = GridAdapter(this, item("name"))
-        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode != 0) {
+            val adp = findViewById<GridView>(R.id.startlist)
+            adp.adapter = GridAdapter(this, item("name"))
+        }
     }
 }

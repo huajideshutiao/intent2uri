@@ -7,7 +7,6 @@ import android.widget.EditText
 import android.widget.TextView
 
 class JumpEditActivity : Activity() {
-    private val db by lazy { App.dbHelper.writableDatabase }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_jump_edit)
@@ -29,13 +28,13 @@ class JumpEditActivity : Activity() {
 
         val show = findViewById<TextView>(R.id.show)
 
-        val item = intent.extras?.getString("item", "")
+        val id = intent.extras?.getString("id", "")
 
         // 如果是新建项目，隐藏删除按钮
-        if (item.isNullOrEmpty()) delete.visibility = Button.GONE
+        if (id.isNullOrEmpty()) delete.visibility = Button.GONE
         else {
-            OpenLink.fromDb(item).apply {
-                show.text = "你可以通过 kkp://${item}/ 来打开这个快捷方式"
+            OpenLink.fromDb(id).apply {
+                show.text = "你可以通过 kkp://${id}/ 来打开这个快捷方式"
                 name.setText(this.name)
                 description.setText(this.description)
                 matchRule.setText(this.matchRule)
@@ -49,19 +48,19 @@ class JumpEditActivity : Activity() {
         }
 
         save.setOnClickListener {
-            OpenLink.toDb(
-                OpenLink(
-                    name.text.toString(),
-                    description.text.toString(),
-                    matchRule.text.toString(),
-                    replaceRule.text.toString(),
-                    packageName.text.toString(),
-                    activity.text.toString(),
-                    uri.text.toString(),
-                    extraKey.text.toString(),
-                    extraValue.text.toString()
-                ), db, item
-            )
+            OpenLink(
+                name.text.toString(),
+                description.text.toString(),
+                matchRule.text.toString(),
+                replaceRule.text.toString(),
+                packageName.text.toString(),
+                activity.text.toString(),
+                uri.text.toString(),
+                extraKey.text.toString(),
+                extraValue.text.toString()
+            ).toDb(id)
+            intent.putExtra("id", id)
+            setResult(1, intent)
         }
 
         start.setOnClickListener {
@@ -76,10 +75,11 @@ class JumpEditActivity : Activity() {
                 extraKey.text.toString(),
                 extraValue.text.toString()
             ).start("test")
-
         }
         delete.setOnClickListener {
-            db.delete("list", "id = ?", arrayOf(item))
+            App.dbHelper.delete("list", "id = ?", arrayOf(id))
+            intent.putExtra("id", id)
+            setResult(1, intent)
             finish()
         }
     }

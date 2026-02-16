@@ -9,7 +9,7 @@ import rikka.shizuku.Shizuku
 
 class App : Application() {
     companion object {
-        lateinit var dbHelper: DbHelper
+        lateinit var dbHelper: SQLiteDatabase
         lateinit var sharedPreferences: SharedPreferences
 
         val args by lazy {
@@ -27,7 +27,7 @@ class App : Application() {
     }
     override fun onCreate() {
         super.onCreate()
-        dbHelper = DbHelper(this)
+        dbHelper = DbHelper(this).writableDatabase
         sharedPreferences = getSharedPreferences("list", MODE_PRIVATE)
     }
 }
