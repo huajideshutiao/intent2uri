@@ -74,9 +74,4 @@ class JumpEditActivity : Activity() {
             finish()
         }
     }
-
-    override fun finish() {
-        db.close()
-        super.finish()
-    }
 }

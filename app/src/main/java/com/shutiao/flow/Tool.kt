@@ -104,15 +104,18 @@ fun item(db: SQLiteDatabase, column: String): List<String> {
 }
 
 object Constant {
-    val args by lazy { Shizuku.UserServiceArgs(
-        ComponentName(
-            BuildConfig.APPLICATION_ID,
-            UserService::class.java.name
-        )
-    ).daemon(true)
-        .processNameSuffix("service")
-        .debuggable(false)
-        .version(BuildConfig.VERSION_CODE) }
+    val args by lazy {
+        Shizuku.UserServiceArgs(
+            ComponentName(
+                BuildConfig.APPLICATION_ID,
+                UserService::class.java.name
+            )
+        ).daemon(true)
+            .processNameSuffix("service")
+            .debuggable(BuildConfig.DEBUG)
+            .version(BuildConfig.VERSION_CODE)
+    }
+    val su by lazy { ProcessBuilder("su").start().outputStream }
 }
 
 fun openLink(keyWord: String, openLink: OpenLink) {
@@ -136,36 +139,40 @@ fun openLink(keyWord: String, openLink: OpenLink) {
                     .append("' '").append(ii4[df]).append('\'')
             }
         }
-        val command = ii.toString()
-        try {
-            val useShizuku = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-            val conn = object : ServiceConnection {
-                override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
-                    IUserService.Stub.asInterface(iBinder).exec(command)
-                    Shizuku.unbindUserService(Constant.args, this, false)
-                }
-                override fun onServiceDisconnected(p0: ComponentName?) {}
+        ii.append('\n')
+    }
+    val command = ii.toString()
+    try {
+        val useShizuku = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+        val conn = object : ServiceConnection {
+            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
+                IUserService.Stub.asInterface(iBinder).exec(command)
+                Shizuku.unbindUserService(Constant.args, this, false)
             }
-            if (useShizuku) {
-                Shizuku.bindUserService(Constant.args, conn)
-            } else {
-                Shizuku.addRequestPermissionResultListener(
-                    object : Shizuku.OnRequestPermissionResultListener {
-                        override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
-                            if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                                try{
-                                Shizuku.bindUserService(Constant.args, conn)
-                            } else ProcessBuilder("su", "-c", command).start()
-                            }finally{
-                                Shizuku.removeRequestPermissionResultListener(this)}
-                        }
-                    }
-                )
-                Shizuku.requestPermission(0)
-            }
-        }catch (_: Exception) {
-            ProcessBuilder("su", "-c", command).start()
+
+            override fun onServiceDisconnected(p0: ComponentName?) {}
         }
+        if (useShizuku) {
+            Shizuku.bindUserService(Constant.args, conn)
+        } else {
+            Shizuku.addRequestPermissionResultListener(
+                object : Shizuku.OnRequestPermissionResultListener {
+                    override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
+                        if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                            Shizuku.bindUserService(Constant.args, conn)
+                        } else {
+                            Constant.su.write(command.toByteArray())
+                            Constant.su.flush()
+                        }
+                        Shizuku.removeRequestPermissionResultListener(this)
+                    }
+                }
+            )
+            Shizuku.requestPermission(0)
+        }
+    } catch (_: Exception) {
+        Constant.su.write(command.toByteArray())
+        Constant.su.flush()
     }
 }
 
