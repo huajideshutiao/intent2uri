@@ -7,35 +7,27 @@ import android.os.Bundle
 
 
 class JumpActivity : Activity() {
-    private val db by lazy { DbHelper.getInstance(this).readableDatabase }
-    private val list by lazy {  getSharedPreferences("list", MODE_PRIVATE) }
-    private val httpData by lazy { item(db, "host") }
-    private fun open(data : Uri){
+    private fun open(data: Uri) {
         when (data.scheme) {
             "kkp" -> {
-                val i1 = data.authority!!
-                val esd= (data.path?:"").drop(1)
-                openLink(esd,OpenLink.fromDb(db, i1))
+                val authority = data.authority!!
+                val keyWord = (data.path ?: "").drop(1)
+                OpenLink.fromDb(authority).start(keyWord)
             }
 
             "http", "https" -> {
-                var staut = true
-                val key =data.toString()
-                for(i in httpData.indices step 2) {
-                    if( httpData[i]!=""  && key.contains(Regex(httpData[i]))) {
-                        openLink(key,OpenLink.fromDb(db, httpData[i + 1]))
-                        staut = false
-                        break
+                val key = data.toString()
+                val (idList, matchRuleList) = item("matchRule")
+                for (i in matchRuleList.indices) {
+                    if (matchRuleList[i].isNotEmpty() && key.contains(Regex(matchRuleList[i]))) {
+                        OpenLink.fromDb(idList[i]).start(key)
+                        return
                     }
                 }
-                if (staut){
-                    val browser = Intent(Intent.ACTION_VIEW, data)
-                    browser.setPackage(list.getString("browser", ""))
-                    startActivity(browser)
-                }
+                startActivity(Intent(Intent.ACTION_VIEW, data).setPackage(App.sharedPreferences.getString("browser", "")))
             }
         }
-        finish()
+        moveTaskToBack(true)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +44,7 @@ class JumpActivity : Activity() {
             Intent.ACTION_VIEW -> {
                 intent.data?.let { open(it) }
             }
+
             Intent.ACTION_SEND -> {
                 if (intent.type?.startsWith("text/") == true) {
                     val text = intent.getStringExtra(Intent.EXTRA_TEXT)

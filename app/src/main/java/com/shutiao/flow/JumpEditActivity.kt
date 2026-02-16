@@ -5,71 +5,80 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+
 class JumpEditActivity : Activity() {
-    private val db by lazy { DbHelper.getInstance(this).writableDatabase}
+    private val db by lazy { App.dbHelper.writableDatabase }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_jump_edit)
-        val button = findViewById<Button>(R.id.start)
-        val button1 = findViewById<Button>(R.id.save)
-        val button2 = findViewById<Button>(R.id.delete)
-        button2.visibility = Button.VISIBLE
-        button.visibility = Button.VISIBLE
-        val i1 = findViewById<EditText>(R.id.packageName)
-        val i2 = findViewById<EditText>(R.id.activity)
-        val i3 = findViewById<EditText>(R.id.extra_key)
-        val i4 = findViewById<EditText>(R.id.extra_value)
-        val i5 = findViewById<EditText>(R.id.matchRule)
-        val i6 = findViewById<EditText>(R.id.replaceRule)
-        val i7 = findViewById<EditText>(R.id.uri)
-        val i = findViewById<EditText>(R.id.name)
+        val start = findViewById<Button>(R.id.start)
+        val save = findViewById<Button>(R.id.save)
+        val delete = findViewById<Button>(R.id.delete)
+        delete.visibility = Button.VISIBLE
+        start.visibility = Button.VISIBLE
+
+        val name = findViewById<EditText>(R.id.name)
+        val description = findViewById<EditText>(R.id.description)
+        val packageName = findViewById<EditText>(R.id.packageName)
+        val activity = findViewById<EditText>(R.id.activity)
+        val uri = findViewById<EditText>(R.id.uri)
+        val matchRule = findViewById<EditText>(R.id.matchRule)
+        val replaceRule = findViewById<EditText>(R.id.replaceRule)
+        val extraKey = findViewById<EditText>(R.id.extra_key)
+        val extraValue = findViewById<EditText>(R.id.extra_value)
+
         val show = findViewById<TextView>(R.id.show)
+
         val item = intent.extras?.getString("item", "")
 
-        OpenLink.fromDb(db, item!!).apply {
-            if (host == "") {
+        // 如果是新建项目，隐藏删除按钮
+        if (item.isNullOrEmpty()) delete.visibility = Button.GONE
+        else {
+            OpenLink.fromDb(item).apply {
                 show.text = "你可以通过 kkp://${item}/ 来打开这个快捷方式"
+                name.setText(this.name)
+                description.setText(this.description)
+                matchRule.setText(this.matchRule)
+                replaceRule.setText(this.replaceRule)
+                packageName.setText(this.packageName)
+                activity.setText(this.activity)
+                uri.setText(this.uri)
+                extraKey.setText(this.extraKey)
+                extraValue.setText(this.extraValue)
             }
-            i.setText(name)
-            i5.setText(host)
-            i1.setText(pp)
-            i2.setText(activity)
-            i3.setText(keys)
-            i4.setText(datas)
-            i6.setText(change2)
-            i7.setText(uri)
         }
 
-        button1.setOnClickListener {
+        save.setOnClickListener {
             OpenLink.toDb(
                 OpenLink(
-                    i.text.toString(),
-                    i5.text.toString(),
-                    i1.text.toString(),
-                    i2.text.toString(),
-                    i3.text.toString(),
-                    i4.text.toString(),
-                    i6.text.toString(),
-                    i7.text.toString()
+                    name.text.toString(),
+                    description.text.toString(),
+                    matchRule.text.toString(),
+                    replaceRule.text.toString(),
+                    packageName.text.toString(),
+                    activity.text.toString(),
+                    uri.text.toString(),
+                    extraKey.text.toString(),
+                    extraValue.text.toString()
                 ), db, item
             )
         }
 
-        button.setOnClickListener {
-            openLink(
-                "test", OpenLink(
-                    i.text.toString(),
-                    i5.text.toString(),
-                    i1.text.toString(),
-                    i2.text.toString(),
-                    i3.text.toString(),
-                    i4.text.toString(),
-                    i6.text.toString(),
-                    i7.text.toString()
-                )
-            )
+        start.setOnClickListener {
+            OpenLink(
+                name.text.toString(),
+                description.text.toString(),
+                matchRule.text.toString(),
+                replaceRule.text.toString(),
+                packageName.text.toString(),
+                activity.text.toString(),
+                uri.text.toString(),
+                extraKey.text.toString(),
+                extraValue.text.toString()
+            ).start("test")
+
         }
-        button2.setOnClickListener {
+        delete.setOnClickListener {
             db.delete("list", "id = ?", arrayOf(item))
             finish()
         }

@@ -13,7 +13,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.Button
-import android.widget.EditText
 import android.widget.GridView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -21,15 +20,17 @@ import android.widget.Toast
 
 class JumpManageActivity : Activity() {
     class GridAdapter(
-        private val context0: Activity,
-        private val data0: List<String>
+        private val context: Activity,
+        data: Pair<List<String>, List<String>>,
     ) : BaseAdapter() {
-        override fun getCount() = data0.size / 2
-        override fun getItem(position: Int) = data0[position]
+        private val idList = data.first
+        private val nameList = data.second
+        override fun getCount() = nameList.size
+        override fun getItem(position: Int) = nameList[position]
         override fun getItemId(position: Int) = position.toLong()
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-            var textView : TextView
-            if (convertView == null){
+            var textView: TextView
+            if (convertView == null) {
                 textView = TextView(parent!!.context).apply {
                     textSize = 20f
                     gravity = Gravity.CENTER
@@ -40,26 +41,49 @@ class JumpManageActivity : Activity() {
                     background = borderDrawable
                     setPadding(8, 8, 8, 8)
                 }
-            }else{
-                textView = convertView as TextView
-            }
+            } else textView = convertView as TextView
 
-            textView.text = data0[position * 2]
+            val popupMenu = android.widget.PopupMenu(parent!!.context, textView)
+            popupMenu.menuInflater.inflate(R.menu.jump_manage_menu, popupMenu.menu)
+
+            textView.text = nameList[position]
             textView.setOnClickListener {
-                val intent = Intent(parent!!.context, JumpEditActivity::class.java)
-                intent.putExtra("item", data0[2 * position + 1])
-                context0.startActivityForResult(intent, 1)
+                val intent = Intent(parent.context, JumpEditActivity::class.java)
+                intent.putExtra("item", idList[position])
+                context.startActivityForResult(intent, 1)
+            }
+            // 长按删除功能
+            textView.setOnLongClickListener {
+
+                popupMenu.setOnMenuItemClickListener { menuItem ->
+                    when (menuItem.itemId) {
+                        R.id.delete -> {
+                            val db = App.dbHelper.writableDatabase
+                            db.delete("list", "id = ?", arrayOf(idList[position]))
+                            Toast.makeText(context, "已删除", Toast.LENGTH_SHORT).show()
+                            context.recreate()
+                            true
+                        }
+
+                        R.id.copy -> {
+                            // 复制功能暂不实现
+                            true
+                        }
+
+                        else -> false
+                    }
+                }
+                popupMenu.show()
+                true
             }
 
             return textView
         }
     }
-    private val db by lazy { DbHelper.getInstance(this).writableDatabase}
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val list = getSharedPreferences("list", MODE_PRIVATE)
-
+        val list = App.sharedPreferences
         val browserList: List<ResolveInfo> = run {
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.bing.com"))
             val browserList =
@@ -72,15 +96,6 @@ class JumpManageActivity : Activity() {
         }
 
         setContentView(R.layout.activity_jump_manage)
-        val save = findViewById<Button>(R.id.save)
-        val i1 = findViewById<EditText>(R.id.packageName)
-        val i2 = findViewById<EditText>(R.id.activity)
-        val i3 = findViewById<EditText>(R.id.extra_key)
-        val i4 = findViewById<EditText>(R.id.extra_value)
-        val i5 = findViewById<EditText>(R.id.matchRule)
-        val i6 = findViewById<EditText>(R.id.replaceRule)
-        val i7 = findViewById<EditText>(R.id.uri)
-        val i = findViewById<EditText>(R.id.name)
         val adp = findViewById<GridView>(R.id.startlist)
         val aadp = findViewById<LinearLayout>(R.id.applist)
 
@@ -106,30 +121,19 @@ class JumpManageActivity : Activity() {
             }
             aadp.addView(textView)
         }
-
-        adp.adapter = GridAdapter(this, item(db, "name"))
-
-        save.setOnClickListener {
-            OpenLink.toDb(
-                OpenLink(
-                    i.text.toString(),
-                    i5.text.toString(),
-                    i1.text.toString(),
-                    i2.text.toString(),
-                    i3.text.toString(),
-                    i4.text.toString(),
-                    i6.text.toString(),
-                    i7.text.toString()
-                ), db
-            )
-            listOf(i, i1, i2, i3, i4, i5, i6, i7).forEach { it.setText("") }
-            adp.adapter = GridAdapter(this, item(db, "name"))
+        adp.adapter = GridAdapter(this, item("name"))
+        // 设置添加按钮的点击事件
+        val addButton = findViewById<Button>(R.id.add)
+        addButton.setOnClickListener {
+            val intent = Intent(this@JumpManageActivity, JumpEditActivity::class.java)
+            intent.putExtra("item", "")
+            startActivityForResult(intent, 1)
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         val adp = findViewById<GridView>(R.id.startlist)
-        adp.adapter = GridAdapter(this, item(db, "name"))
+        adp.adapter = GridAdapter(this, item("name"))
         super.onActivityResult(requestCode, resultCode, data)
     }
 }

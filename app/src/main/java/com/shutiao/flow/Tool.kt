@@ -2,11 +2,9 @@ package com.shutiao.flow
 
 import android.content.ComponentName
 import android.content.ContentValues
-import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
 import android.os.IBinder
 import android.util.Base64
 import org.json.JSONArray
@@ -17,70 +15,109 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 data class OpenLink(
-    val name: String = "",
-    val host: String,
-    val pp: String,
+    val name: String,
+    val description: String,
+    val matchRule: String,
+    val replaceRule: String,
+    val packageName: String,
     val activity: String,
-    val keys: String,
-    var datas: String,
-    val change2: String,
-    var uri: String
+    var uri: String,
+    val extraKey: String,
+    var extraValue: String
 ) {
     companion object {
-        fun fromDb(db: SQLiteDatabase, id: String): OpenLink {
+        fun fromDb(id: String): OpenLink {
+            val db = App.dbHelper.readableDatabase
             val cursor = db.query("list", null, "id = ?", arrayOf(id), null, null, null)
             cursor.moveToFirst()
-            val name = cursor.getString(cursor.getColumnIndexOrThrow("name"))
-            val host = cursor.getString(cursor.getColumnIndexOrThrow("host"))
-            val change2 = cursor.getString(cursor.getColumnIndexOrThrow("change2"))
-            val pp = cursor.getString(cursor.getColumnIndexOrThrow("package"))
-            val activity = cursor.getString(cursor.getColumnIndexOrThrow("activity"))
-            val keys = cursor.getString(cursor.getColumnIndexOrThrow("keys"))
-            val datas = cursor.getString(cursor.getColumnIndexOrThrow("datas"))
-            val uri = cursor.getString(cursor.getColumnIndexOrThrow("uri"))
-            cursor.close()
-            return OpenLink(name, host, pp, activity, keys, datas, change2, uri)
+            cursor.use { return OpenLink(
+                cursor.getString(cursor.getColumnIndexOrThrow("name")),
+                cursor.getString(cursor.getColumnIndexOrThrow("description")),
+                cursor.getString(cursor.getColumnIndexOrThrow("matchRule")),
+                cursor.getString(cursor.getColumnIndexOrThrow("replaceRule")),
+                cursor.getString(cursor.getColumnIndexOrThrow("packageName")),
+                cursor.getString(cursor.getColumnIndexOrThrow("activity")),
+                cursor.getString(cursor.getColumnIndexOrThrow("uri")),
+                cursor.getString(cursor.getColumnIndexOrThrow("extraKey")),
+                cursor.getString(cursor.getColumnIndexOrThrow("extraValue"))
+            ) }
+
         }
 
-        fun toDb(openLink: OpenLink, db: SQLiteDatabase, id: String = "") {
-            val hy = ContentValues().apply {
+        fun toDb(openLink: OpenLink, db: SQLiteDatabase, id: String? = "") {
+            val item = ContentValues().apply {
                 put("name", openLink.name)
-                put("host", openLink.host)
-                put("package", openLink.pp)
+                put("description", openLink.description)
+                put("matchRule", openLink.matchRule)
+                put("replaceRule", openLink.replaceRule)
+                put("packageName", openLink.packageName)
                 put("activity", openLink.activity)
-                put("keys", openLink.keys)
-                put("datas", openLink.datas)
-                put("change2", openLink.change2)
                 put("uri", openLink.uri)
+                put("extraKey", openLink.extraKey)
+                put("extraValue", openLink.extraValue)
             }
-            if (id == "") db.insert("list", null, hy)
-            else db.update("list", hy, "id = ?", arrayOf(id))
+            if (id == "") db.insert("list", null, item)
+            else db.update("list", item, "id = ?", arrayOf(id))
+        }
+    }
+
+    fun start(keyWord: String) {
+        val ii = StringBuilder("am start -a android.intent.action.VIEW")
+        var keyWord = keyWord
+        if (matchRule.isNotEmpty()) {
+            keyWord = keyWord.replace(Regex(matchRule), replaceRule)
+        }
+        if (packageName.isNotEmpty()) ii.append(" -n ").append(packageName)
+        if (activity.isNotEmpty()) ii.append("/").append(activity)
+        if (uri.isNotEmpty()) ii.append(" -d ").append(uri.replace("{key}", keyWord))
+        if (extraValue.isNotEmpty()) extraValue = extraValue.replace("{key}", keyWord)
+        if (extraKey.isNotEmpty()) {
+            val keys = extraKey.split("\n")
+            val values = extraValue.split("\n")
+            for (i in keys.indices) {
+                ii.append(" --e").append(keys[i].replaceRange(1, 2, " '"))
+                    .append("' '").append(values[i]).append('\'')
+            }
+        }
+        ii.append('\n')
+        val command = ii.toString()
+        try {
+            val useShizuku = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+            val conn = object : ServiceConnection {
+                override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
+                    IUserService.Stub.asInterface(iBinder).exec(command)
+                    Shizuku.unbindUserService(App.args, this, false)
+                }
+
+                override fun onServiceDisconnected(p0: ComponentName?) {}
+            }
+            if (useShizuku) {
+                Shizuku.bindUserService(App.args, conn)
+            } else {
+                Shizuku.addRequestPermissionResultListener(
+                    object : Shizuku.OnRequestPermissionResultListener {
+                        override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
+                            if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                                Shizuku.bindUserService(App.args, conn)
+                            } else {
+                                App.su.write(command.toByteArray())
+                                App.su.flush()
+                            }
+                            Shizuku.removeRequestPermissionResultListener(this)
+                        }
+                    }
+                )
+                Shizuku.requestPermission(0)
+            }
+        } catch (_: Exception) {
+            App.su.write(command.toByteArray())
+            App.su.flush()
         }
     }
 }
 
-class DbHelper private constructor(context: Context) : SQLiteOpenHelper(context, "list.db", null, 2) {
-    companion object {
-        @Volatile
-        private var instance: DbHelper? = null
-        fun getInstance(context: Context): DbHelper {
-            return instance ?: synchronized(this) {
-                instance ?: DbHelper(context.applicationContext).also { instance = it }
-            }
-        }
-    }
-
-    override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE list (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,host TEXT, package TEXT, activity TEXT , keys TEXT, datas TEXT, change2 TEXT, uri TEXT)")
-    }
-
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("ALTER TABLE list ADD change2 TEXT")
-        db.execSQL("ALTER TABLE list ADD uri TEXT")
-    }
-}
-
-fun item(db: SQLiteDatabase, column: String): List<String> {
+fun item(column: String): Pair<List<String>, List<String>> {
+    val db = App.dbHelper.readableDatabase
     val cursor = db.query(
         "list",
         arrayOf("id", column),
@@ -90,90 +127,19 @@ fun item(db: SQLiteDatabase, column: String): List<String> {
         null,
         null
     )
-    val lk = mutableListOf<String>()
+    val idList = mutableListOf<String>()
+    val dataList = mutableListOf<String>()
+
     if (cursor.moveToFirst()) {
         do {
-            val name = cursor.getString(cursor.getColumnIndexOrThrow(column))
-            val id = cursor.getInt(cursor.getColumnIndexOrThrow("id")).toString()
-            lk.add(name)
-            lk.add(id)
+            val id = cursor.getString(cursor.getColumnIndexOrThrow("id"))
+            val data = cursor.getString(cursor.getColumnIndexOrThrow(column))
+            idList.add(id)
+            dataList.add(data)
         } while (cursor.moveToNext())
     }
     cursor.close()
-    return lk
-}
-
-object Constant {
-    val args by lazy {
-        Shizuku.UserServiceArgs(
-            ComponentName(
-                BuildConfig.APPLICATION_ID,
-                UserService::class.java.name
-            )
-        ).daemon(true)
-            .processNameSuffix("service")
-            .debuggable(BuildConfig.DEBUG)
-            .version(BuildConfig.VERSION_CODE)
-    }
-    val su by lazy { ProcessBuilder("su").start().outputStream }
-}
-
-fun openLink(keyWord: String, openLink: OpenLink) {
-    val ii = StringBuilder("am start -a android.intent.action.VIEW")
-    openLink.apply {
-        var keyWord = keyWord
-        if (change2.isNotEmpty()) {
-            val lines = change2.split("\n")
-            keyWord = keyWord.replace(Regex(lines[0]), lines[1])
-        }
-        if (keys != "") datas = datas.replace("{key}", keyWord)
-
-        if (pp != "") ii.append(" -n ").append(pp)
-        if (activity != "") ii.append("/").append(activity)
-        if (uri != "") ii.append(" -d ").append(uri.replace("{key}", keyWord))
-        if (keys != "") {
-            val ii3 = keys.split("\n")
-            val ii4 = datas.split("\n")
-            for (df in ii3.indices) {
-                ii.append(" --e").append(ii3[df].replaceRange(1, 2, " '"))
-                    .append("' '").append(ii4[df]).append('\'')
-            }
-        }
-        ii.append('\n')
-    }
-    val command = ii.toString()
-    try {
-        val useShizuku = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-        val conn = object : ServiceConnection {
-            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
-                IUserService.Stub.asInterface(iBinder).exec(command)
-                Shizuku.unbindUserService(Constant.args, this, false)
-            }
-
-            override fun onServiceDisconnected(p0: ComponentName?) {}
-        }
-        if (useShizuku) {
-            Shizuku.bindUserService(Constant.args, conn)
-        } else {
-            Shizuku.addRequestPermissionResultListener(
-                object : Shizuku.OnRequestPermissionResultListener {
-                    override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
-                        if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                            Shizuku.bindUserService(Constant.args, conn)
-                        } else {
-                            Constant.su.write(command.toByteArray())
-                            Constant.su.flush()
-                        }
-                        Shizuku.removeRequestPermissionResultListener(this)
-                    }
-                }
-            )
-            Shizuku.requestPermission(0)
-        }
-    } catch (_: Exception) {
-        Constant.su.write(command.toByteArray())
-        Constant.su.flush()
-    }
+    return Pair(idList, dataList)
 }
 
 data class Item(val img: String?, val title: String, val description: String, val link: String)
