@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlinx.serialization)
+//    alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
@@ -56,6 +56,6 @@ android {
 dependencies {
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
-    implementation(libs.kotlinx.serialization.core)
-    implementation(libs.kotlinx.serialization.json)
+//    implementation(libs.kotlinx.serialization.core)
+//    implementation(libs.kotlinx.serialization.json)
 }

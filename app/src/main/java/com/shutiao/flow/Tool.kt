@@ -6,14 +6,13 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
 import android.util.Base64
-import kotlinx.serialization.Serializable
 import org.json.JSONArray
 import org.json.JSONObject
 import rikka.shizuku.Shizuku
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-@Serializable
+
 data class OpenLink(
     val name: String,
     val description: String,
@@ -25,25 +24,66 @@ data class OpenLink(
     val extraKey: String,
     var extraValue: String
 ) {
+    var id: String = ""
+
     companion object {
-        fun fromDb(id: String): OpenLink {
-            val cursor = App.dbHelper.query("list", null, "id = ?", arrayOf(id), null, null, null)
+
+        private var _datas: MutableList<OpenLink>? = null
+
+        val datas: MutableList<OpenLink>
+            get() {
+                if (_datas != null) return _datas!!
+                getDatas()
+                return _datas!!
+            }
+
+        fun getDatas() {
+            val list = mutableListOf<OpenLink>()
+            val cursor = App.dbHelper.query("list", null, null, null, null, null, null)
             cursor.moveToFirst()
-            return cursor.use { OpenLink(
-                cursor.getString(cursor.getColumnIndexOrThrow("name")),
-                cursor.getString(cursor.getColumnIndexOrThrow("description")),
-                cursor.getString(cursor.getColumnIndexOrThrow("matchRule")),
-                cursor.getString(cursor.getColumnIndexOrThrow("replaceRule")),
-                cursor.getString(cursor.getColumnIndexOrThrow("packageName")),
-                cursor.getString(cursor.getColumnIndexOrThrow("activity")),
-                cursor.getString(cursor.getColumnIndexOrThrow("uri")),
-                cursor.getString(cursor.getColumnIndexOrThrow("extraKey")),
-                cursor.getString(cursor.getColumnIndexOrThrow("extraValue"))
-            ) }
+            while (!cursor.isAfterLast) {
+                val tmp = OpenLink(
+                    cursor.getString(cursor.getColumnIndexOrThrow("name")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("description")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("matchRule")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("replaceRule")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("packageName")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("activity")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("uri")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("extraKey")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("extraValue"))
+                )
+                tmp.id = cursor.getString(cursor.getColumnIndexOrThrow("id"))
+                list.add(tmp)
+                cursor.moveToNext()
+            }
+            cursor.close()
+            _datas = list
         }
+
+        fun fromString(backup: String): OpenLink {
+            val op = backup.substring(8, backup.length - 1).split(", ")
+            return OpenLink(
+                op[0].substringAfter("="),
+                op[1].substringAfter("="),
+                op[2].substringAfter("="),
+                op[3].substringAfter("="),
+                op[4].substringAfter("="),
+                op[5].substringAfter("="),
+                op[6].substringAfter("="),
+                op[7].substringAfter("="),
+                op[8].substringAfter("=")
+            )
+        }
+
+        fun delete(id: String) {
+            App.dbHelper.delete("list", "id = ?", arrayOf(id))
+            datas.removeIf { it.id == id }
+        }
+
     }
 
-    fun toDb(id: String? = "") {
+    fun save(id: String? = "") {
         val item = ContentValues().apply {
             put("name", name)
             put("description", description)
@@ -55,8 +95,10 @@ data class OpenLink(
             put("extraKey", extraKey)
             put("extraValue", extraValue)
         }
-        if (id.isNullOrEmpty()) App.dbHelper.insert("list", null, item)
-        else App.dbHelper.update("list", item, "id = ?", arrayOf(id))
+        if (id.isNullOrEmpty()) {
+            App.dbHelper.insert("list", null, item)
+            getDatas()
+        } else App.dbHelper.update("list", item, "id = ?", arrayOf(id))
     }
 
     fun start(keyWord: String) {
@@ -208,7 +250,7 @@ object Soutu {
 
                 "百度" -> {
                     var body = post(
-                        "https://aapi.helioho.st/upload.php",
+                        "https://mtbed.netsons.org/upload.php",
                         mapOf("Origin" to "https://695402.xyz"), null, null
                     )
                     body = body.substring(43, body.length - 3).replace("\\", "")

@@ -33,7 +33,7 @@ class JumpEditActivity : Activity() {
         // 如果是新建项目，隐藏删除按钮
         if (id.isNullOrEmpty()) delete.visibility = Button.GONE
         else {
-            OpenLink.fromDb(id).apply {
+            OpenLink.datas.find { it.id == id }!!.apply {
                 show.text = "你可以通过 kkp://${id}/ 来打开这个快捷方式"
                 name.setText(this.name)
                 description.setText(this.description)
@@ -58,7 +58,7 @@ class JumpEditActivity : Activity() {
                 uri.text.toString(),
                 extraKey.text.toString(),
                 extraValue.text.toString()
-            ).toDb(id)
+            ).save(id)
             intent.putExtra("id", id)
             setResult(1, intent)
         }
@@ -77,7 +77,7 @@ class JumpEditActivity : Activity() {
             ).start("test")
         }
         delete.setOnClickListener {
-            App.dbHelper.delete("list", "id = ?", arrayOf(id))
+            OpenLink.delete(id!!)
             intent.putExtra("id", id)
             setResult(1, intent)
             finish()

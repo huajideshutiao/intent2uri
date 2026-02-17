@@ -1,90 +1,96 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="10dp"
+    android:fillViewport="true"
     android:fitsSystemWindows="true"
-    android:orientation="vertical"
     tools:context=".JumpEditActivity">
 
-    <EditText
-        android:id="@+id/name"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="名称" />
+        android:layout_margin="10dp"
+        android:orientation="vertical">
 
-    <EditText
-        android:id="@+id/description"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="描述" />
+        <EditText
+            android:id="@+id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="名称" />
 
-    <EditText
-        android:id="@+id/matchRule"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="查找规则" />
+        <EditText
+            android:id="@+id/description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="描述" />
 
-    <EditText
-        android:id="@+id/replaceRule"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="替换规则" />
+        <EditText
+            android:id="@+id/matchRule"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="查找规则" />
 
-    <EditText
-        android:id="@+id/packageName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="包名" />
+        <EditText
+            android:id="@+id/replaceRule"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="替换规则" />
 
-    <EditText
-        android:id="@+id/activity"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="活动名" />
+        <EditText
+            android:id="@+id/packageName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="包名" />
 
-    <EditText
-        android:id="@+id/uri"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="uri" />
+        <EditText
+            android:id="@+id/activity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="活动名" />
 
-    <EditText
-        android:id="@+id/extra_key"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="extra 键名(一行一个)" />
+        <EditText
+            android:id="@+id/uri"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="uri" />
 
-    <EditText
-        android:id="@+id/extra_value"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="extra 值(一行一个)" />
+        <EditText
+            android:id="@+id/extra_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="extra 键名(一行一个)" />
 
-    <Button
-        android:id="@+id/start"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="启动"
-        android:visibility="gone" />
+        <EditText
+            android:id="@+id/extra_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="extra 值(一行一个)" />
 
-    <Button
-        android:id="@+id/save"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="保存" />
+        <Button
+            android:id="@+id/start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="启动"
+            android:visibility="gone" />
 
-    <Button
-        android:id="@+id/delete"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="删除"
-        android:visibility="gone" />
+        <Button
+            android:id="@+id/save"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="保存" />
 
-    <TextView
-        android:id="@+id/show"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/delete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="删除"
+            android:visibility="gone" />
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/show"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+</ScrollView>

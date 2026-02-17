@@ -30,6 +30,7 @@ class App : Application() {
         dbHelper = DbHelper(this).writableDatabase
         sharedPreferences = getSharedPreferences("list", MODE_PRIVATE)
     }
+
 }
 
 class DbHelper(context: App) : SQLiteOpenHelper(context, "list.db", null, 2) {

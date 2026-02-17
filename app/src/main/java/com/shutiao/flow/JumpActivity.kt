@@ -12,7 +12,7 @@ class JumpActivity : Activity() {
             "kkp" -> {
                 val authority = data.authority!!
                 val keyWord = (data.path ?: "").drop(1)
-                OpenLink.fromDb(authority).start(keyWord)
+                OpenLink.datas.first { it.id == authority }.start(keyWord)
             }
 
             "http", "https" -> {
@@ -20,7 +20,7 @@ class JumpActivity : Activity() {
                 val (idList, matchRuleList) = item("matchRule")
                 for (i in matchRuleList.indices) {
                     if (matchRuleList[i].isNotEmpty() && key.contains(Regex(matchRuleList[i]))) {
-                        OpenLink.fromDb(idList[i]).start(key)
+                        OpenLink.datas.first { it.id == idList[i] }.start(key)
                         return
                     }
                 }

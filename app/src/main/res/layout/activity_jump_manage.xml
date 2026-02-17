@@ -23,13 +23,20 @@
     <GridView
         android:id="@+id/startlist"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_above="@+id/horizontalScrollView"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/textView"
         android:layout_alignParentTop="true"
         android:layout_marginTop="0dp"
-        android:numColumns="3">
+        android:numColumns="2">
 
     </GridView>
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/add"
+        android:text="设置打开的浏览器" />
 
     <HorizontalScrollView
         android:id="@+id/horizontalScrollView"
@@ -44,14 +51,6 @@
             android:id="@+id/applist"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:orientation="horizontal" />
+            android:orientation="horizontal"/>
     </HorizontalScrollView>
-
-    <Button
-        android:id="@+id/start_item"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textSize="20sp"
-        android:visibility="gone" />
 </RelativeLayout>

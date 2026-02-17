@@ -8,6 +8,9 @@
             <data android:scheme="https" />
             <category android:name="android.intent.category.BROWSABLE" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+        </intent>
     </queries>
     <application
         android:name=".App"
@@ -17,7 +20,8 @@
         android:theme="@style/AppTheme"
         tools:targetApi="35">
         <activity
-            android:name=".JumpEditActivity"/>
+            android:name=".JumpEditActivity"
+            android:windowSoftInputMode="adjustPan"/>
         <activity
             android:name=".JumpActivity"
             android:exported="true"

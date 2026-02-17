@@ -76,6 +76,7 @@ class SoutuResultActivity : Activity() {
                             this@SoutuResultActivity.runOnUiThread {
                                 // 检查位置是否匹配，避免图片加载到错误的位置
                                 if (holder.currentPosition == position) {
+                                    holder.imageView.visibility = View.VISIBLE
                                     holder.imageView.setImageBitmap(bitmap)
                                 }
                             }
