@@ -79,8 +79,7 @@ class JumpManageActivity : Activity() {
             dialog.setView(input)
             dialog.setPositiveButton("导入") { _, _ ->
                 try {
-                    val link = OpenLink.fromString(input.text.toString())
-                    link.save()
+                    OpenLink.fromString(input.text.toString()).save()
                     Toast.makeText(this, "已导入", Toast.LENGTH_SHORT).show()
                     (adp.adapter as BaseAdapter).notifyDataSetChanged()
                 } catch (_: Exception) {

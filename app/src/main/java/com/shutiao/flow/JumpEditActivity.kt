@@ -33,7 +33,7 @@ class JumpEditActivity : Activity() {
         // 如果是新建项目，隐藏删除按钮
         if (id.isNullOrEmpty()) delete.visibility = Button.GONE
         else {
-            OpenLink.datas.find { it.id == id }!!.apply {
+            OpenLink.datas.first { it.id == id }.apply {
                 show.text = "你可以通过 kkp://${id}/ 来打开这个快捷方式"
                 name.setText(this.name)
                 description.setText(this.description)

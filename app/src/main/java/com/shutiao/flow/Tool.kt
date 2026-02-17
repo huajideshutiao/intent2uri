@@ -43,17 +43,17 @@ data class OpenLink(
             cursor.moveToFirst()
             while (!cursor.isAfterLast) {
                 val tmp = OpenLink(
-                    cursor.getString(cursor.getColumnIndexOrThrow("name")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("description")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("matchRule")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("replaceRule")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("packageName")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("activity")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("uri")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("extraKey")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("extraValue"))
+                    cursor.getString(1),
+                    cursor.getString(2),
+                    cursor.getString(3),
+                    cursor.getString(4),
+                    cursor.getString(5),
+                    cursor.getString(6),
+                    cursor.getString(7),
+                    cursor.getString(8),
+                    cursor.getString(9)
                 )
-                tmp.id = cursor.getString(cursor.getColumnIndexOrThrow("id"))
+                tmp.id = cursor.getString(0)
                 list.add(tmp)
                 cursor.moveToNext()
             }
@@ -98,26 +98,38 @@ data class OpenLink(
         if (id.isNullOrEmpty()) {
             App.dbHelper.insert("list", null, item)
             getDatas()
-        } else App.dbHelper.update("list", item, "id = ?", arrayOf(id))
+        } else {
+            App.dbHelper.update("list", item, "id = ?", arrayOf(id))
+            datas.indexOfFirst { it.id == id }.let {
+                this.id = id
+                datas[it] = this
+            }
+        }
     }
 
     fun start(keyWord: String) {
         val ii = StringBuilder("am start -a android.intent.action.VIEW")
-        var keyWord = keyWord
-        if (matchRule.isNotEmpty()) {
-            keyWord = keyWord.replace(Regex(matchRule), replaceRule)
-        }
-        if (packageName.isNotEmpty()) ii.append(" -n ").append(packageName)
-        if (activity.isNotEmpty()) ii.append("/").append(activity)
-        if (uri.isNotEmpty()) ii.append(" -d ").append(uri.replace("{key}", keyWord))
-        if (extraValue.isNotEmpty()) extraValue = extraValue.replace("{key}", keyWord)
-        if (extraKey.isNotEmpty()) {
-            val keys = extraKey.split("\n")
-            val values = extraValue.split("\n")
-            for (i in keys.indices) {
-                ii.append(" --e").append(keys[i].replaceRange(1, 2, " '"))
-                    .append("' '").append(values[i]).append('\'')
+        if (replaceRule.startsWith("shell:")) {
+            ii.setLength(0)
+            ii.append(replaceRule.substringAfter("shell:").replace("{key}", keyWord))
+        } else {
+            var keyWord = keyWord
+            if (matchRule.isNotEmpty()) {
+                keyWord = keyWord.replace(Regex(matchRule), replaceRule)
             }
+            if (packageName.isNotEmpty()) ii.append(" -n ").append(packageName)
+            if (activity.isNotEmpty()) ii.append("/").append(activity)
+            if (uri.isNotEmpty()) ii.append(" -d ").append(uri.replace("{key}", keyWord))
+            val extraValue = extraValue.replace("{key}", keyWord)
+            if (extraKey.isNotEmpty()) {
+                val keys = extraKey.split("\n")
+                val values = extraValue.split("\n")
+                for (i in keys.indices) {
+                    ii.append(" --e").append(keys[i].replaceRange(1, 2, " '"))
+                        .append("' '").append(values[i]).append('\'')
+                }
+            }
+            ii.append(" > /dev/null 2>&1")
         }
         ii.append('\n')
         val command = ii.toString()

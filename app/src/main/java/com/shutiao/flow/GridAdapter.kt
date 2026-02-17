@@ -27,6 +27,7 @@ class GridAdapter(
         popupMenu.menuInflater.inflate(R.menu.jump_manage_menu, popupMenu.menu)
 
         item.findViewById<TextView>(R.id.name).text = getItem(position).name
+        item.findViewById<TextView>(R.id.description).text = getItem(position).description
         val imageView = item.findViewById<ImageView>(R.id.imageView4)
         try {
             imageView.setImageDrawable(
