@@ -64,7 +64,7 @@ class JumpManageActivity : Activity() {
             }
             appList.addView(item)
         }
-        adp.adapter = GridAdapter(this)
+        adp.adapter = RuleAdapter(this)
         // 设置添加按钮的点击事件
         val addButton = findViewById<Button>(R.id.add)
         addButton.setOnClickListener {

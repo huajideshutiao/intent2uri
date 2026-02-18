@@ -5,56 +5,48 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 
-
 class JumpActivity : Activity() {
-    private fun open(data: Uri) {
-        when (data.scheme) {
-            "kkp" -> {
-                val authority = data.authority!!
-                val keyWord = (data.path ?: "").drop(1)
-                OpenLink.datas.first { it.id == authority }.start(keyWord)
+    private fun open(intent: Intent) {
+        val uri = when (intent.action) {
+            Intent.ACTION_VIEW -> intent.data
+            Intent.ACTION_SEND -> {
+                if (intent.type?.startsWith("text/") == true) {
+                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                    text?.let { Uri.parse(it) }
+                } else null
             }
 
-            "http", "https" -> {
-                val key = data.toString()
-                val (idList, matchRuleList) = item("matchRule")
-                for (i in matchRuleList.indices) {
-                    if (matchRuleList[i].isNotEmpty() && key.contains(Regex(matchRuleList[i]))) {
-                        OpenLink.datas.first { it.id == idList[i] }.start(key)
-                        return
-                    }
+            else -> null
+        } ?: return
+        when (uri.scheme) {
+            "kkp" -> OpenLink.datas.first { it.id == uri.authority!! }.start((uri.path ?: "").drop(1))
+
+            else -> {
+                val key = uri.toString()
+
+                OpenLink.datas.find {
+                    it.matchRule.isNotEmpty() && key.contains(Regex(it.matchRule))
+                }?.let {
+                    it.start(key)
+                    return
                 }
-                startActivity(Intent(Intent.ACTION_VIEW, data).setPackage(App.sharedPreferences.getString("browser", "")))
+                if (uri.scheme != "http" && uri.scheme != "https") return
+                startActivity(
+                    Intent(Intent.ACTION_VIEW, uri)
+                        .setPackage(App.sharedPreferences.getString("browser", ""))
+                        .putExtras(intent.extras ?: Bundle())
+                )
             }
         }
-        moveTaskToBack(true)
+        finish()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handleIntent(intent)
+        open(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
-        intent?.let { handleIntent(it) }
-    }
-
-    private fun handleIntent(intent: Intent) {
-        when (intent.action) {
-            Intent.ACTION_VIEW -> {
-                intent.data?.let { open(it) }
-            }
-
-            Intent.ACTION_SEND -> {
-                if (intent.type?.startsWith("text/") == true) {
-                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-                    text?.let {
-                        // 处理分享的文本内容
-                        val uri = Uri.parse(it)
-                        open(uri)
-                    }
-                }
-            }
-        }
+        intent?.let { open(it) }
     }
 }

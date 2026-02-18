@@ -253,6 +253,14 @@ object Soutu {
 
     fun upload(site: String, callback: (Data) -> Unit): Thread {
         data = Data()
+        if (true){
+            return Thread{
+                data.jump = false
+                data.itemList.add(Item(null, "测试", "测试", "测试"))
+                data.itemList.add(Item(null, "测试", "测试", "测试"))
+                callback(data)
+            }.apply { start() }
+        }
         return Thread {
             when (site) {
                 "saucenao" -> data.url = "https://saucenao.com/search.php?url=$imageUrl"

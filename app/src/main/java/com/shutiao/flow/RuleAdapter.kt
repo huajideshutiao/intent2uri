@@ -14,41 +14,54 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 
-class GridAdapter(
+class RuleAdapter(
     private val context: Activity,
 ) : BaseAdapter() {
+    private class ViewHolder(context: Context, view: View) {
+        val imageView: ImageView = view.findViewById(R.id.imageView4)
+        val titleText: TextView = view.findViewById(R.id.name)
+        val descriptionText: TextView = view.findViewById(R.id.description)
+        val popupMenu: PopupMenu =
+            PopupMenu(context, view).apply { this.menuInflater.inflate(R.menu.jump_manage_menu, this.menu) }
+    }
+
     override fun getCount() = OpenLink.datas.size
     override fun getItem(position: Int) = OpenLink.datas[position]
     override fun getItemId(position: Int) = position.toLong()
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val item: View = convertView ?: View.inflate(parent!!.context, R.layout.item, null)
+        val view: View
+        val holder: ViewHolder
+        if (convertView == null) {
+            view = View.inflate(context, R.layout.item, null)
+            holder = ViewHolder(context, view)
+            view.tag = holder
+        } else {
+            view = convertView
+            holder = view.tag as ViewHolder
+        }
 
-        val popupMenu = PopupMenu(parent!!.context, item)
-        popupMenu.menuInflater.inflate(R.menu.jump_manage_menu, popupMenu.menu)
-
-        item.findViewById<TextView>(R.id.name).text = getItem(position).name
-        item.findViewById<TextView>(R.id.description).text = getItem(position).description
-        val imageView = item.findViewById<ImageView>(R.id.imageView4)
+        holder.titleText.text = getItem(position).name
+        holder.descriptionText.text = getItem(position).description
         try {
-            imageView.setImageDrawable(
+            holder.imageView.setImageDrawable(
                 context.packageManager.getApplicationIcon(
                     getItem(position).packageName.ifEmpty { App.sharedPreferences.getString("browser", "")!! }
                 )
             )
         } catch (_: PackageManager.NameNotFoundException) {
-            imageView.setImageDrawable(
+            holder.imageView.setImageDrawable(
                 context.packageManager.getApplicationIcon(context.packageName)
             )
         }
-        imageView.visibility = View.VISIBLE
-        item.setOnClickListener {
-            val intent = Intent(parent.context, JumpEditActivity::class.java)
+        holder.imageView.visibility = View.VISIBLE
+        view.setOnClickListener {
+            val intent = Intent(context, JumpEditActivity::class.java)
             intent.putExtra("id", getItem(position).id)
             context.startActivityForResult(intent, 0)
         }
         // 长按删除功能
-        item.setOnLongClickListener {
-            popupMenu.setOnMenuItemClickListener { menuItem ->
+        view.setOnLongClickListener {
+            holder.popupMenu.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.delete -> {
                         OpenLink.delete(getItem(position).id)
@@ -69,9 +82,9 @@ class GridAdapter(
                     else -> false
                 }
             }
-            popupMenu.show()
+            holder.popupMenu.show()
             true
         }
-        return item
+        return view
     }
 }
