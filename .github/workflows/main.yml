@@ -34,7 +34,7 @@ jobs:
         
     - name: Release Build Android
       run: |
-        ./gradlew assembleDebug
+        ./gradlew assembleRelease
         
     - name: Upload APK
       if: success()
