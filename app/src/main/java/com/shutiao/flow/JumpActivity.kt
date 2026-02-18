@@ -45,14 +45,10 @@ class JumpActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handleIntent(intent)
+        open(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
-        intent?.let { handleIntent(it) }
-    }
-
-    private fun handleIntent(intent: Intent) {
-        open(intent)
+        intent?.let { open(it) }
     }
 }
