@@ -9,21 +9,13 @@ class JumpActivity : Activity() {
     private fun open(intent: Intent) {
         val uri = when (intent.action) {
             Intent.ACTION_VIEW -> intent.data
-            Intent.ACTION_SEND -> {
-                if (intent.type?.startsWith("text/") == true) {
-                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-                    text?.let { Uri.parse(it) }
-                } else null
-            }
-
+            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let { Uri.parse(it) }
             else -> null
         } ?: return
         when (uri.scheme) {
             "kkp" -> OpenLink.datas.first { it.id == uri.authority!! }.start((uri.path ?: "").drop(1))
-
             else -> {
                 val key = uri.toString()
-
                 OpenLink.datas.find {
                     it.matchRule.isNotEmpty() && key.contains(Regex(it.matchRule))
                 }?.let {
@@ -41,11 +33,7 @@ class JumpActivity : Activity() {
         finish()
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        open(intent)
-    }
-
+    override fun onCreate(bundle: Bundle?) = open(intent)
     override fun onNewIntent(intent: Intent?) {
         intent?.let { open(it) }
     }

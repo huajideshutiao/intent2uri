@@ -207,14 +207,10 @@ object Soutu {
     private val imageUrl by lazy {
         var imageUrl = post(
             "https://yandex.com/images-apphost/image-download?cbird=117&images_avatars_size=preview&images_avatars_namespace=images-cbir",
-            mapOf("Content-Type" to "image/jpeg"),
-            null,
-            null
+            mapOf("Content-Type" to "image/jpeg"), null, null
         )
-
-        "https://avatars.mds.yandex.net/get-images-cbir/" + imageUrl.subSequence(
-            15,
-            imageUrl.indexOf('"', 16)
+        "https://avatars.mds.yandex.net/get-images-cbir/" + imageUrl.substring(
+            15, imageUrl.indexOf('"', 16)
         ) + "/orig"
     }
     var data = Data()
@@ -222,7 +218,7 @@ object Soutu {
     private fun post(
         url: String,
         headers: Map<String, String>?,
-        imgPartName: String? = "image",
+        imgPartName: String?,
         form: ((OutputStream) -> Unit)?
     ): String {
         val connect = URL(url).openConnection() as HttpURLConnection
@@ -253,14 +249,14 @@ object Soutu {
 
     fun upload(site: String, callback: (Data) -> Unit): Thread {
         data = Data()
-        if (true){
-            return Thread{
-                data.jump = false
-                data.itemList.add(Item(null, "测试", "测试", "测试"))
-                data.itemList.add(Item(null, "测试", "测试", "测试"))
-                callback(data)
-            }.apply { start() }
-        }
+//        if (true){
+//            return Thread{
+//                data.jump = false
+//                data.itemList.add(Item(null, "测试", "测试", "测试"))
+//                data.itemList.add(Item(null, "测试", "测试", "测试"))
+//                callback(data)
+//            }.apply { start() }
+//        }
         return Thread {
             when (site) {
                 "saucenao" -> data.url = "https://saucenao.com/search.php?url=$imageUrl"
