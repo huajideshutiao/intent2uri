@@ -1,10 +1,10 @@
-name: Android Debug Build
+name: Android Release Build
 
 on:
   workflow_dispatch:
 
 jobs:
-  android-debug-build:
+  android-release-build:
     runs-on: ubuntu-latest
     
     steps:
@@ -32,16 +32,16 @@ jobs:
           ~/.android/build-cache
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         
-    - name: Debug Build Android
+    - name: Release Build Android
       run: |
-        ./gradlew assembleDebug
+        ./gradlew assembleRelease
         
     - name: Upload APK
       if: success()
       uses: actions/upload-artifact@v4
       with:
-        name: debug-apk
-        path: app/build/outputs/apk/debug/*.apk
+        name: release-apk
+        path: app/build/outputs/apk/release/*.apk
         
     - name: Upload build reports
       if: always()
