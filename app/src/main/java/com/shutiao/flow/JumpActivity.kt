@@ -9,7 +9,7 @@ import android.util.Log
 
 class JumpActivity : Activity() {
     private fun open(intent: Intent) {
-        Log.e("Intent"，intent.toString())
+        Log.e("Intent",intent.toString())
         val uri = when (intent.action) {
             Intent.ACTION_VIEW -> intent.data
             Intent.ACTION_SEND -> {
