@@ -33,7 +33,11 @@ class JumpActivity : Activity() {
         finish()
     }
 
-    override fun onCreate(bundle: Bundle?) = open(intent)
+    override fun onCreate(bundle: Bundle?) {
+        super.onCreate(bundle)
+        open(intent)
+    }
+
     override fun onNewIntent(intent: Intent?) {
         intent?.let { open(it) }
     }
