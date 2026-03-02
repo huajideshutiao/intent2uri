@@ -12,7 +12,7 @@ class SoutuResultActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_soutu_result)
         val results = findViewById<ListView>(R.id.imageResults)
-        val items = Soutu.data.itemList
+        val items = Soutu.instance?.data?.itemList ?: return
         results.adapter = SoutuAdapter(this,items)
         val url = intent.getStringExtra("url")
         findViewById<ImageButton>(R.id.open).setOnClickListener {

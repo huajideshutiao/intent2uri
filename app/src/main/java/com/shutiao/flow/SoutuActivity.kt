@@ -55,7 +55,7 @@ class SoutuActivity : Activity() {
             file = this.contentResolver.openInputStream(uri)!!.readBytes()
         }
 
-        Soutu.file = file
+        val soutu = Soutu(file)
         val sites = findViewById<GridView>(R.id.sites)
         val items =
             listOf("google", "百度", "saucenao", "搜图酱", "yandex", "ascii2d", "animetrace")
@@ -71,7 +71,7 @@ class SoutuActivity : Activity() {
                     progressBar.visibility = View.VISIBLE
                     sites.visibility = View.GONE
                     view.isEnabled = false
-                    Soutu.upload(item) { data ->
+                    soutu.upload(item) { data ->
                         this@SoutuActivity.runOnUiThread {
                             progressBar.visibility = View.GONE
                             sites.visibility = View.VISIBLE

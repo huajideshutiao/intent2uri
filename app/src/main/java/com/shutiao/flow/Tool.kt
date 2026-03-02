@@ -168,31 +168,6 @@ data class OpenLink(
     }
 }
 
-fun item(column: String): Pair<List<String>, List<String>> {
-    val cursor = App.dbHelper.query(
-        "list",
-        arrayOf("id", column),
-        null,
-        null,
-        null,
-        null,
-        null
-    )
-    val idList = mutableListOf<String>()
-    val dataList = mutableListOf<String>()
-
-    if (cursor.moveToFirst()) {
-        do {
-            val id = cursor.getString(cursor.getColumnIndexOrThrow("id"))
-            val data = cursor.getString(cursor.getColumnIndexOrThrow(column))
-            idList.add(id)
-            dataList.add(data)
-        } while (cursor.moveToNext())
-    }
-    cursor.close()
-    return Pair(idList, dataList)
-}
-
 data class Item(val img: String?, val title: String, val description: String, val link: String)
 
 data class Data(
@@ -202,8 +177,7 @@ data class Data(
     var url: String = ""
 )
 
-object Soutu {
-    var file: ByteArray? = null
+class Soutu(val file: ByteArray) {
     private val imageUrl by lazy {
         var imageUrl = post(
             "https://yandex.com/images-apphost/image-download?cbird=117&images_avatars_size=preview&images_avatars_namespace=images-cbir",
@@ -214,6 +188,12 @@ object Soutu {
         ) + "/orig"
     }
     var data = Data()
+        private set
+    companion object{
+        //实例
+        var instance : Soutu? = null
+        private set
+    }
 
     private fun post(
         url: String,
@@ -247,7 +227,7 @@ object Soutu {
         return imageUrl
     }
 
-    fun upload(site: String, callback: (Data) -> Unit): Thread {
+    fun upload(site: String, callback: (Data) -> Unit) {
         data = Data()
 //        if (true){
 //            return Thread{
@@ -257,7 +237,7 @@ object Soutu {
 //                callback(data)
 //            }.apply { start() }
 //        }
-        return Thread {
+        Thread {
             when (site) {
                 "saucenao" -> data.url = "https://saucenao.com/search.php?url=$imageUrl"
                 "google" -> data.url = "https://www.google.com/searchbyimage?client=app&image_url=$imageUrl"
@@ -319,15 +299,15 @@ object Soutu {
                     val data: JSONArray = JSONObject(body).getJSONArray("data")
                     for (i in 0 until data.length()) {
                         val i = data.getJSONObject(i)
-                        if ((i["similarity"] as Double) < 40.0) break
+                        if ((i["similarity"] as Number).toDouble() < 40.0) break
                         this@Soutu.data.itemList.add(
                             Item(
                                 i["previewImageUrl"] as String,
                                 i["title"] as String,
                                 "相似度：" + i["similarity"] + "\n来源：" + i["source"],
                                 when (i["source"]) {
-                                    "nhentai" -> "https://nhentai.net" + i["subjectPath"] as String
-                                    "ehentai" -> "https://exhentai.org" + i["subjectPath"] as String
+                                    "nhentai" -> "https://nhentai.net" + (i["subjectPath"] as String)
+                                    "ehentai" -> "https://exhentai.org" + (i["subjectPath"] as String)
                                     else -> ""
                                 }
                             )
@@ -335,9 +315,11 @@ object Soutu {
                     }
                 }
             }
+            instance = this@Soutu
             callback(data)
-        }.apply {
-            start()
-        }
+        }.start()
+//            .apply {
+//            start()
+//        }
     }
 }
