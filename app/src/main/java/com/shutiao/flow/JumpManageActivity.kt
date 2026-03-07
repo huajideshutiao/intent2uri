@@ -38,18 +38,17 @@ class JumpManageActivity : Activity() {
         val adp = findViewById<GridView>(R.id.startlist)
         val appList = findViewById<LinearLayout>(R.id.applist)
 
-        val item = LinearLayout(this)
-        item.orientation = LinearLayout.VERTICAL
-        item.gravity = Gravity.CENTER
-        item.layoutParams = ViewGroup.LayoutParams(200, 200)
-        item.setPadding(8, 8, 8, 8)
-        val imgView = ImageView(this)
-        imgView.scaleType = ImageView.ScaleType.FIT_CENTER
-        imgView.layoutParams = ViewGroup.LayoutParams(200, 120)
-        val textView = TextView(this)
-        textView.gravity = Gravity.CENTER
-
         for (i in browserList) {
+            val item = LinearLayout(this)
+            item.orientation = LinearLayout.VERTICAL
+            item.gravity = Gravity.CENTER
+            item.layoutParams = ViewGroup.LayoutParams(200, 200)
+            item.setPadding(8, 8, 8, 8)
+            val imgView = ImageView(this)
+            imgView.scaleType = ImageView.ScaleType.FIT_CENTER
+            imgView.layoutParams = ViewGroup.LayoutParams(200, 120)
+            val textView = TextView(this)
+            textView.gravity = Gravity.CENTER
             imgView.setImageDrawable(i.loadIcon(packageManager))
             textView.text = i.loadLabel(packageManager)
             item.addView(imgView)
