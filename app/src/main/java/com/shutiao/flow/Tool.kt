@@ -114,7 +114,7 @@ data class OpenLink(
             ii.append(replaceRule.substringAfter("shell:").replace("{key}", keyWord))
         } else {
             var keyWord = keyWord
-            if (matchRule.isNotEmpty()) {
+            if (matchRule.isNotEmpty() && replaceRule.isNotEmpty()) {
                 keyWord = keyWord.replace(Regex(matchRule), replaceRule)
             }
             if (packageName.isNotEmpty()) ii.append(" -n ").append(packageName)
