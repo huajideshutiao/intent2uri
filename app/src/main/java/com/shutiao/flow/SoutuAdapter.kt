@@ -19,11 +19,13 @@ import java.util.concurrent.ConcurrentHashMap
 class SoutuAdapter(private val context: Activity, private val items: List<Item>) : BaseAdapter() {
     private val imageCache = LruCache<String, Bitmap>(50 * 1024 * 1024)
     private val loadingUrls = ConcurrentHashMap<String, Boolean>()
+
     private class ViewHolder(view: View) {
         val imageView: ImageView = view.findViewById(R.id.imageView4)
         val titleText: TextView = view.findViewById(R.id.name)
         val descriptionText: TextView = view.findViewById(R.id.description)
     }
+
     override fun getCount(): Int = items.size
     override fun getItem(position: Int): Item = items[position]
     override fun getItemId(position: Int): Long = position.toLong()
@@ -67,9 +69,18 @@ class SoutuAdapter(private val context: Activity, private val items: List<Item>)
                             if (bitmap != null) {
                                 imageCache.put(item.img, bitmap)
                                 context.runOnUiThread {
-                                    // 加载完成后，不仅更新当前 holder，还通知整个列表刷新
-                                    // 这样如果有多个条目共用同一个 URL，它们都能显示出来
-                                    notifyDataSetChanged()
+                                    // 遍历可见的 ImageView，只更新 tag 匹配的
+                                    val listView = parent as? android.widget.ListView ?: return@runOnUiThread
+                                    val start = listView.firstVisiblePosition
+                                    val end = listView.lastVisiblePosition
+                                    for (i in start..end) {
+                                        val itemView = listView.getChildAt(i - start) ?: continue
+                                        val imageView = itemView.findViewById<ImageView>(R.id.imageView4)
+                                        if (imageView?.tag == item.img) {
+                                            imageView.visibility = View.VISIBLE
+                                            imageView.setImageBitmap(bitmap)
+                                        }
+                                    }
                                 }
                             }
                             loadingUrls.remove(item.img)
