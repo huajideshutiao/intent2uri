@@ -22,18 +22,16 @@ class JumpActivity : Activity() {
                     it.start(key)
                     return
                 }
-                if (uri.scheme != "http" && uri.scheme != "https") return
-                //查询系统推荐的打开应用，没有则使用默认浏览器打开
-                val intent = Intent(Intent.ACTION_VIEW, uri)
-                val bestPackage =
-                    packageManager.queryIntentActivities(intent, 0).firstOrNull()?.activityInfo?.packageName
-                startActivity(
-                    intent.setPackage(
-                        if (bestPackage != packageName) bestPackage
-                        else App.sharedPreferences.getString("browser", "")
-                    ).putExtras(this.intent.extras ?: Bundle())
-                        //.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                )
+                //if (uri.scheme != "http" && uri.scheme != "https") return
+                val intent = Intent(Intent.ACTION_VIEW, uri).putExtras(intent.extras ?: Bundle())
+                val resolveInfo = packageManager.resolveActivity(intent, 0)
+                try {
+                    if (resolveInfo == null || resolveInfo.activityInfo.packageName == packageName) {
+                        startActivity(
+                            intent.setPackage(App.sharedPreferences.getString("browser", ""))
+                        )
+                    } else startActivity(intent)
+                } catch (_: Exception) { }
             }
         }
     }
