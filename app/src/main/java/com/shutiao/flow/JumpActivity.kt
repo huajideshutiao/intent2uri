@@ -2,6 +2,7 @@ package com.shutiao.flow
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 
@@ -24,14 +25,12 @@ class JumpActivity : Activity() {
                 }
                 //if (uri.scheme != "http" && uri.scheme != "https") return
                 val intent = Intent(Intent.ACTION_VIEW, uri).putExtras(intent.extras ?: Bundle())
-                val resolveInfo = packageManager.resolveActivity(intent, 0)
-                try {
-                    if (resolveInfo == null || resolveInfo.activityInfo.packageName == packageName) {
-                        startActivity(
-                            intent.setPackage(App.sharedPreferences.getString("browser", ""))
-                        )
-                    } else startActivity(intent)
-                } catch (_: Exception) { }
+                val resolveInfo = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+                if (resolveInfo == null || resolveInfo.activityInfo.packageName == packageName) {
+                    startActivity(
+                        intent.setPackage(App.sharedPreferences.getString("browser", ""))
+                    )
+                } else startActivity(intent)
             }
         }
     }
