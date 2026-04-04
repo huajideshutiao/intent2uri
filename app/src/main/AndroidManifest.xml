@@ -52,6 +52,8 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".SettingsActivity"/>
+        <activity
             android:name=".SoutuResultActivity"/>
         <activity
             android:name=".SoutuActivity"

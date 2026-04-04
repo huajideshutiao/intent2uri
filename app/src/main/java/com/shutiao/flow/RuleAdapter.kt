@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
+import org.json.JSONObject
 
 class RuleAdapter(
     private val context: Activity,
@@ -71,10 +72,21 @@ class RuleAdapter(
                     }
 
                     R.id.copy -> {
-                        val backup = getItem(position).toString()
+                        val item = getItem(position)
+                        val json = JSONObject().apply {
+                            put("name", item.name)
+                            put("description", item.description)
+                            put("matchRule", item.matchRule)
+                            put("replaceRule", item.replaceRule)
+                            put("packageName", item.packageName)
+                            put("activity", item.activity)
+                            put("uri", item.uri)
+                            put("extraKey", item.extraKey)
+                            put("extraValue", item.extraValue)
+                        }
                         val clipboard =
                             context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("backup", backup))
+                        clipboard.setPrimaryClip(ClipData.newPlainText("backup", json.toString()))
                         Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
                         true
                     }

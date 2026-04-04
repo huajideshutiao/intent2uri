@@ -1,11 +1,22 @@
 package com.shutiao.flow
 
+import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
+import android.net.Uri
 import android.os.IBinder
 import android.util.Base64
+import android.view.Gravity
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONObject
 import rikka.shizuku.Shizuku
@@ -189,10 +200,11 @@ class Soutu(val file: ByteArray) {
     }
     var data = Data()
         private set
-    companion object{
+
+    companion object {
         //实例
-        var instance : Soutu? = null
-        private set
+        var instance: Soutu? = null
+            private set
     }
 
     private fun post(
@@ -318,8 +330,75 @@ class Soutu(val file: ByteArray) {
             instance = this@Soutu
             callback(data)
         }.start()
-//            .apply {
-//            start()
-//        }
     }
+}
+
+fun showBrowserSelector(
+    context: Context,
+    onCancel: (() -> Unit)? = null
+) {
+    val packageManager = context.packageManager
+    val currentPackageName = context.packageName
+
+    val browserList: List<ResolveInfo> = run {
+        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.bing.com"))
+        packageManager.queryIntentActivities(browserIntent, PackageManager.MATCH_ALL)
+            .filter { it.activityInfo.packageName != currentPackageName }
+    }
+
+    val dialog = AlertDialog.Builder(context).create()
+    dialog.setTitle("选择默认浏览器")
+    dialog.setCancelable(onCancel==null)
+
+    val layout = LinearLayout(context)
+    layout.orientation = LinearLayout.HORIZONTAL
+    layout.setPadding(16, 16, 16, 16)
+    layout.gravity = Gravity.CENTER
+
+    for (browser in browserList) {
+        val item = LinearLayout(context)
+        item.orientation = LinearLayout.VERTICAL
+        item.gravity = Gravity.CENTER
+        item.setPadding(16, 16, 16, 16)
+        item.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
+        )
+
+        val imgView = ImageView(context)
+        imgView.scaleType = ImageView.ScaleType.FIT_CENTER
+        imgView.layoutParams = ViewGroup.LayoutParams(120, 120)
+        imgView.setImageDrawable(browser.loadIcon(packageManager))
+
+        val textView = TextView(context)
+        textView.text = browser.loadLabel(packageManager)
+        textView.gravity = Gravity.CENTER
+        textView.setPadding(0, 8, 0, 0)
+        textView.textSize = 14f
+
+        item.addView(imgView)
+        item.addView(textView)
+
+        item.setOnClickListener {
+            App.sharedPreferences.edit()
+                .putString("browser", browser.activityInfo.packageName)
+                .apply()
+            Toast.makeText(
+                context,
+                "已设置${browser.loadLabel(packageManager)}为默认浏览器",
+                Toast.LENGTH_SHORT
+            ).show()
+            dialog.dismiss()
+        }
+
+        layout.addView(item)
+    }
+
+    if (onCancel != null) {
+        dialog.setOnCancelListener { onCancel() }
+    }
+
+    dialog.setView(layout)
+    dialog.show()
 }
