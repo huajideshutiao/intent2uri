@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Button
 import android.widget.Toast
 import org.json.JSONArray
@@ -29,6 +30,10 @@ class SettingsActivity : Activity() {
         findViewById<Button>(R.id.btn_select_browser).setOnClickListener {
             showBrowserSelector(context = this)
         }
+
+        findViewById<Button>(R.id.btn_set_default_assistant).setOnClickListener {
+            openDefaultAssistantSettings()
+        }
     }
 
     private fun backupConfig() {
@@ -46,6 +51,15 @@ class SettingsActivity : Activity() {
             type = "application/json"
         }
         startActivityForResult(intent, IMPORT_REQUEST_CODE)
+    }
+
+    private fun openDefaultAssistantSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_VOICE_INPUT_SETTINGS)
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "无法打开助理设置: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

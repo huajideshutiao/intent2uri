@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.DragEvent
 import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -20,8 +21,41 @@ class JumpManageActivity : Activity() {
         }
 
         setContentView(R.layout.activity_jump_manage)
-        val adp = findViewById<GridView>(R.id.startlist)
-        adp.adapter = RuleAdapter(this)
+        val gridView = findViewById<GridView>(R.id.startlist)
+        val adapter = RuleAdapter(this)
+        gridView.adapter = adapter
+
+        gridView.setOnDragListener { _, event ->
+            when (event.action) {
+                DragEvent.ACTION_DRAG_STARTED -> true
+                DragEvent.ACTION_DRAG_ENTERED -> true
+                DragEvent.ACTION_DRAG_LOCATION -> true
+                DragEvent.ACTION_DROP -> {
+                    val dropPosition = gridView.pointToPosition(event.x.toInt(), event.y.toInt())
+                    val clipData = event.clipData
+                    if (clipData != null && clipData.itemCount > 0) {
+                        val draggedPositionStr = clipData.getItemAt(0).text.toString()
+                        val draggedPosition = draggedPositionStr.toIntOrNull() ?: -1
+
+                        if (dropPosition != GridView.INVALID_POSITION &&
+                            draggedPosition != -1 &&
+                            draggedPosition != dropPosition &&
+                            draggedPosition < OpenLink.datas.size &&
+                            dropPosition < OpenLink.datas.size
+                        ) {
+
+                            val item = OpenLink.datas.removeAt(draggedPosition)
+                            OpenLink.datas.add(dropPosition, item)
+                            OpenLink.updateOrder()
+                            adapter.notifyDataSetChanged()
+                        }
+                    }
+                    true
+                }
+
+                else -> true
+            }
+        }
         
         findViewById<Button>(R.id.settings).setOnClickListener {
             startActivityForResult(Intent(this, SettingsActivity::class.java), 1)
@@ -53,7 +87,7 @@ class JumpManageActivity : Activity() {
                     )
                     openLink.save()
                     Toast.makeText(this, "已导入", Toast.LENGTH_SHORT).show()
-                    (adp.adapter as BaseAdapter).notifyDataSetChanged()
+                    (gridView.adapter as BaseAdapter).notifyDataSetChanged()
                 } catch (_: Exception) {
                     Toast.makeText(this, "导入失败", Toast.LENGTH_SHORT).show()
                 }

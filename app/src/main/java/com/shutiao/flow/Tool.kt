@@ -8,9 +8,16 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import android.net.Uri
 import android.os.IBinder
 import android.util.Base64
+import android.util.LruCache
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -20,9 +27,12 @@ import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONObject
 import rikka.shizuku.Shizuku
+import java.io.File
+import java.io.FileOutputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.Executors
 
 data class OpenLink(
     val name: String,
@@ -33,11 +43,190 @@ data class OpenLink(
     val activity: String,
     var uri: String,
     val extraKey: String,
-    var extraValue: String
+    var extraValue: String,
+    val iconType: String = "app",
+    val iconValue: String = "",
+    val showInAssistant: Boolean = false
 ) {
     var id: String = ""
 
+    fun getIconBitmap(context: Context): Bitmap {
+        // 1. 优先从内存缓存读取
+        val cacheKey = if (iconType == "app" && iconValue.isNotEmpty()) "pkg_$iconValue" else id
+        if (cacheKey.isNotEmpty()) {
+            memoryCache.get(cacheKey)?.let { return it }
+        }
+
+        val cacheDir = File(context.cacheDir, "icons")
+        if (!cacheDir.exists()) cacheDir.mkdirs()
+        val cacheFile = File(cacheDir, "${id.ifEmpty { "temp_" + System.currentTimeMillis() }}.png")
+
+        if (cacheFile.exists()) {
+            val bitmap = BitmapFactory.decodeFile(cacheFile.absolutePath)
+            if (bitmap != null && id.isNotEmpty()) {
+                memoryCache.put(id, bitmap)
+            }
+            if (bitmap != null) return bitmap
+        }
+
+        val size = (50 * context.resources.displayMetrics.density).toInt()
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        when (iconType) {
+            "text" -> {
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+                paint.color = Color.LTGRAY
+                canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+                paint.color = Color.WHITE
+                paint.textSize = size * 0.6f
+                paint.textAlign = Paint.Align.CENTER
+                val text = iconValue.ifEmpty { name.take(1) }
+                val bounds = Rect()
+                paint.getTextBounds(text, 0, text.length, bounds)
+                val baseline = (size - bounds.top - bounds.bottom) / 2f
+                canvas.drawText(text, size / 2f, baseline, paint)
+            }
+
+            "image" -> {
+                try {
+                    val options = BitmapFactory.Options().apply {
+                        inJustDecodeBounds = true
+                    }
+                    BitmapFactory.decodeFile(iconValue, options)
+                    options.inSampleSize = calculateInSampleSize(options, size, size)
+                    options.inJustDecodeBounds = false
+                    val original = BitmapFactory.decodeFile(iconValue, options)
+                    if (original != null) {
+                        val srcRect = if (original.width > original.height) {
+                            val left = (original.width - original.height) / 2
+                            Rect(left, 0, left + original.height, original.height)
+                        } else {
+                            val top = (original.height - original.width) / 2
+                            Rect(0, top, original.width, top + original.width)
+                        }
+                        canvas.drawBitmap(original, srcRect, Rect(0, 0, size, size), Paint(Paint.FILTER_BITMAP_FLAG))
+                        original.recycle()
+                    }
+                } catch (_: Exception) {
+                    drawDefaultIcon(context, canvas, size)
+                }
+            }
+
+            else -> { // app
+                try {
+                    val pkg =
+                        iconValue.ifEmpty { packageName.ifEmpty { App.sharedPreferences.getString("browser", "")!! } }
+                    val drawable = context.packageManager.getApplicationIcon(pkg)
+                    drawable.setBounds(0, 0, size, size)
+                    drawable.draw(canvas)
+                } catch (_: Exception) {
+                    drawDefaultIcon(context, canvas, size)
+                }
+            }
+        }
+
+        if (cacheKey.isNotEmpty()) {
+            memoryCache.put(cacheKey, bitmap)
+            if (!cacheKey.startsWith("pkg_")) { // App 图标无需重复写磁盘，由系统或包名缓存处理
+                try {
+                    FileOutputStream(cacheFile).use {
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        return bitmap
+    }
+
+    fun loadIconAsync(context: Context, imageView: ImageView) {
+        val tag = id
+        imageView.tag = tag
+
+        // 先看内存缓存
+        val cached = memoryCache.get(id)
+        if (cached != null) {
+            imageView.setImageBitmap(cached)
+            return
+        }
+
+        // 异步加载
+        iconExecutor.execute {
+            val bitmap = getIconBitmap(context)
+            imageView.post {
+                if (imageView.tag == tag) {
+                    imageView.setImageBitmap(bitmap)
+                }
+            }
+        }
+    }
+
+    private fun drawDefaultIcon(context: Context, canvas: Canvas, size: Int) {
+        val drawable = context.packageManager.getApplicationIcon(context.packageName)
+        drawable.setBounds(0, 0, size, size)
+        drawable.draw(canvas)
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.outHeight to options.outWidth
+        var inSampleSize = 1
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
     companion object {
+        val memoryCache = LruCache<String, Bitmap>(128)
+        val iconExecutor = Executors.newFixedThreadPool(4)
+
+        private fun loadBitmapAsync(
+            cacheKey: String, imageView: ImageView, loadBitmap: () -> Bitmap
+        ) {
+            imageView.tag = cacheKey
+            val cached = memoryCache.get(cacheKey)
+            if (cached != null) {
+                imageView.setImageBitmap(cached)
+                return
+            }
+            imageView.setImageDrawable(null)
+            iconExecutor.execute {
+                val bitmap = loadBitmap()
+                memoryCache.put(cacheKey, bitmap)
+                imageView.post {
+                    if (imageView.tag == cacheKey) {
+                        imageView.setImageBitmap(bitmap)
+                    }
+                }
+            }
+        }
+
+        fun loadAppIcon(context: Context, pkg: String, imageView: ImageView) {
+            val cacheKey = "pkg_$pkg"
+            loadBitmapAsync(cacheKey, imageView) {
+                val pm = context.packageManager
+                val drawable = pm.getApplicationIcon(pkg)
+                val size = (48 * context.resources.displayMetrics.density).toInt()
+                val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                drawable.setBounds(0, 0, size, size)
+                drawable.draw(canvas)
+                bitmap
+            }
+        }
+
+        fun clearIconCache(context: Context, id: String) {
+            memoryCache.remove(id)
+            val cacheFile = File(File(context.cacheDir, "icons"), "$id.png")
+            if (cacheFile.exists()) cacheFile.delete()
+        }
 
         private var _datas: MutableList<OpenLink>? = null
 
@@ -50,7 +239,7 @@ data class OpenLink(
 
         fun getDatas() {
             val list = mutableListOf<OpenLink>()
-            val cursor = App.dbHelper.query("list", null, null, null, null, null, null)
+            val cursor = App.dbHelper.query("list", null, null, null, null, null, "sort_order ASC")
             cursor.moveToFirst()
             while (!cursor.isAfterLast) {
                 val tmp = OpenLink(
@@ -62,7 +251,10 @@ data class OpenLink(
                     cursor.getString(6),
                     cursor.getString(7),
                     cursor.getString(8),
-                    cursor.getString(9)
+                    cursor.getString(9),
+                    cursor.getString(11) ?: "app",
+                    cursor.getString(12) ?: "",
+                    cursor.getInt(13) == 1
                 )
                 tmp.id = cursor.getString(0)
                 list.add(tmp)
@@ -72,19 +264,13 @@ data class OpenLink(
             _datas = list
         }
 
-        fun fromString(backup: String): OpenLink {
-            val op = backup.substring(8, backup.length - 1).split(", ")
-            return OpenLink(
-                op[0].substringAfter("="),
-                op[1].substringAfter("="),
-                op[2].substringAfter("="),
-                op[3].substringAfter("="),
-                op[4].substringAfter("="),
-                op[5].substringAfter("="),
-                op[6].substringAfter("="),
-                op[7].substringAfter("="),
-                op[8].substringAfter("=")
-            )
+        fun updateOrder() {
+            _datas?.forEachIndexed { index, openLink ->
+                val values = ContentValues().apply {
+                    put("sort_order", index)
+                }
+                App.dbHelper.update("list", values, "id = ?", arrayOf(openLink.id))
+            }
         }
 
         fun delete(id: String) {
@@ -105,6 +291,9 @@ data class OpenLink(
             put("uri", uri)
             put("extraKey", extraKey)
             put("extraValue", extraValue)
+            put("iconType", iconType)
+            put("iconValue", iconValue)
+            put("showInAssistant", if (showInAssistant) 1 else 0)
         }
         if (id.isNullOrEmpty()) {
             App.dbHelper.insert("list", null, item)
@@ -136,8 +325,8 @@ data class OpenLink(
                 val keys = extraKey.split("\n")
                 val values = extraValue.split("\n")
                 for (i in keys.indices) {
-                    ii.append(" --e").append(keys[i].replaceRange(1, 2, " '"))
-                        .append("' '").append(values[i]).append('\'')
+                    ii.append(" --e").append(keys[i].replaceRange(1, 2, " '")).append("' '").append(values[i])
+                        .append('\'')
                 }
             }
             ii.append(" > /dev/null 2>&1")
@@ -157,19 +346,17 @@ data class OpenLink(
             if (useShizuku) {
                 Shizuku.bindUserService(App.args, conn)
             } else {
-                Shizuku.addRequestPermissionResultListener(
-                    object : Shizuku.OnRequestPermissionResultListener {
-                        override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
-                            if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                                Shizuku.bindUserService(App.args, conn)
-                            } else {
-                                App.su.write(command.toByteArray())
-                                App.su.flush()
-                            }
-                            Shizuku.removeRequestPermissionResultListener(this)
+                Shizuku.addRequestPermissionResultListener(object : Shizuku.OnRequestPermissionResultListener {
+                    override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
+                        if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                            Shizuku.bindUserService(App.args, conn)
+                        } else {
+                            App.su.write(command.toByteArray())
+                            App.su.flush()
                         }
+                        Shizuku.removeRequestPermissionResultListener(this)
                     }
-                )
+                })
                 Shizuku.requestPermission(0)
             }
         } catch (_: Exception) {
@@ -192,7 +379,9 @@ class Soutu(val file: ByteArray) {
     private val imageUrl by lazy {
         var imageUrl = post(
             "https://yandex.com/images-apphost/image-download?cbird=117&images_avatars_size=preview&images_avatars_namespace=images-cbir",
-            mapOf("Content-Type" to "image/jpeg"), null, null
+            mapOf("Content-Type" to "image/jpeg"),
+            null,
+            null
         )
         "https://avatars.mds.yandex.net/get-images-cbir/" + imageUrl.substring(
             15, imageUrl.indexOf('"', 16)
@@ -208,10 +397,7 @@ class Soutu(val file: ByteArray) {
     }
 
     private fun post(
-        url: String,
-        headers: Map<String, String>?,
-        imgPartName: String?,
-        form: ((OutputStream) -> Unit)?
+        url: String, headers: Map<String, String>?, imgPartName: String?, form: ((OutputStream) -> Unit)?
     ): String {
         val connect = URL(url).openConnection() as HttpURLConnection
         connect.apply {
@@ -258,8 +444,7 @@ class Soutu(val file: ByteArray) {
 
                 "百度" -> {
                     var body = post(
-                        "https://mtbed.netsons.org/upload.php",
-                        mapOf("Origin" to "https://695402.xyz"), null, null
+                        "https://mtbed.netsons.org/upload.php", mapOf("Origin" to "https://695402.xyz"), null, null
                     )
                     body = body.substring(43, body.length - 3).replace("\\", "")
                     data.url =
@@ -269,8 +454,7 @@ class Soutu(val file: ByteArray) {
                 "animetrace" -> {
                     data.jump = false
                     val body = post(
-                        "https://api.animetrace.com/v1/search",
-                        null, "file", null
+                        "https://api.animetrace.com/v1/search", null, "file", null
                     )
                     val data: JSONArray =
                         JSONObject(body).getJSONArray("data").getJSONObject(0).getJSONArray("character")
@@ -294,15 +478,11 @@ class Soutu(val file: ByteArray) {
                         it.substring(it.indexOf("m: ").let { it1 -> it1 + 3..it1 + 15 })
                     }.toLong()
                     val kj = Base64.encodeToString(
-                        ((System.currentTimeMillis() / 1000).toBigInteger()
-                            .pow(2) + (49 + n).toBigInteger()).toString()
-                            .toByteArray(),
-                        Base64.NO_WRAP
+                        ((System.currentTimeMillis() / 1000).toBigInteger().pow(2) + (49 + n).toBigInteger()).toString()
+                            .toByteArray(), Base64.NO_WRAP
                     ).reversed().replace("=", "")
                     val body = post(
-                        "https://soutubot.moe/api/search",
-                        mapOf("x-api-key" to kj),
-                        "file"
+                        "https://soutubot.moe/api/search", mapOf("x-api-key" to kj), "file"
                     ) {
                         it.write("\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"factor\"\r\n\r\n1.2".toByteArray())
                     }
@@ -334,8 +514,7 @@ class Soutu(val file: ByteArray) {
 }
 
 fun showBrowserSelector(
-    context: Context,
-    onCancel: (() -> Unit)? = null
+    context: Context, onCancel: (() -> Unit)? = null
 ) {
     val packageManager = context.packageManager
     val currentPackageName = context.packageName
@@ -348,7 +527,7 @@ fun showBrowserSelector(
 
     val dialog = AlertDialog.Builder(context).create()
     dialog.setTitle("选择默认浏览器")
-    dialog.setCancelable(onCancel==null)
+    dialog.setCancelable(onCancel == null)
 
     val layout = LinearLayout(context)
     layout.orientation = LinearLayout.HORIZONTAL
@@ -361,9 +540,7 @@ fun showBrowserSelector(
         item.gravity = Gravity.CENTER
         item.setPadding(16, 16, 16, 16)
         item.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            1f
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
         )
 
         val imgView = ImageView(context)
@@ -381,13 +558,9 @@ fun showBrowserSelector(
         item.addView(textView)
 
         item.setOnClickListener {
-            App.sharedPreferences.edit()
-                .putString("browser", browser.activityInfo.packageName)
-                .apply()
+            App.sharedPreferences.edit().putString("browser", browser.activityInfo.packageName).apply()
             Toast.makeText(
-                context,
-                "已设置${browser.loadLabel(packageManager)}为默认浏览器",
-                Toast.LENGTH_SHORT
+                context, "已设置${browser.loadLabel(packageManager)}为默认浏览器", Toast.LENGTH_SHORT
             ).show()
             dialog.dismiss()
         }

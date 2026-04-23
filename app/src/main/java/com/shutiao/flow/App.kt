@@ -33,11 +33,20 @@ class App : Application() {
 
 }
 
-class DbHelper(context: App) : SQLiteOpenHelper(context, "list.db", null, 2) {
+class DbHelper(context: App) : SQLiteOpenHelper(context, "list.db", null, 5) {
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE list (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,description TEXT,matchRule TEXT,replaceRule TEXT,packageName TEXT,activity TEXT,uri TEXT,extraKey TEXT,extraValue TEXT)")
+        db.execSQL("CREATE TABLE list (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,description TEXT,matchRule TEXT,replaceRule TEXT,packageName TEXT,activity TEXT,uri TEXT,extraKey TEXT,extraValue TEXT,sort_order INTEGER DEFAULT 0,iconType TEXT,iconValue TEXT,showInAssistant INTEGER DEFAULT 0)")
     }
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE list ADD COLUMN sort_order INTEGER DEFAULT 0")
+        }
+        if (oldVersion < 4) {
+            db.execSQL("ALTER TABLE list ADD COLUMN iconType TEXT")
+            db.execSQL("ALTER TABLE list ADD COLUMN iconValue TEXT")
+        }
+        if (oldVersion < 5) {
+            db.execSQL("ALTER TABLE list ADD COLUMN showInAssistant INTEGER DEFAULT 0")
+        }
     }
 }
