@@ -35,8 +35,6 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
     private lateinit var input: BackEditText
     private lateinit var overlayContainer: FrameLayout
     private lateinit var selectedIcon: ImageView
-    private lateinit var selectorScroll: View
-    private lateinit var selectorRow: LinearLayout
 
     private var currentSelectedLink: OpenLink? = null
 
@@ -81,8 +79,6 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         iconRow = view.findViewById(R.id.icon_row)
         sideBar = view.findViewById(R.id.side_bar)
         selectedIcon = view.findViewById(R.id.selected_icon)
-        selectorScroll = view.findViewById(R.id.selector_scroll)
-        selectorRow = view.findViewById(R.id.selector_row)
 
         val btnExpand = view.findViewById<Button>(R.id.btn_expand)
         val btnSettings = view.findViewById<Button>(R.id.btn_settings)
@@ -111,7 +107,6 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         rootContainer.setOnClickListener { finish() }
         assistantRoot.setOnClickListener { /* 消费事件 */ }
         sideBar.setOnClickListener { /* 消费事件 */ }
-        selectorScroll.setOnClickListener { /* 消费事件 */ }
 
         val lastSelectedId = App.sharedPreferences.getString("selected_link_id", "")
         currentSelectedLink = if (!lastSelectedId.isNullOrEmpty()) {
@@ -155,7 +150,6 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
             if (sideBar.visibility == View.VISIBLE) {
                 sideBar.visibility = View.GONE
             } else {
-                selectorScroll.visibility = View.GONE // 二选一：隐藏左侧选择器
                 sideBar.visibility = View.VISIBLE
             }
         }

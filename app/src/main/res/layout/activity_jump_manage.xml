@@ -4,7 +4,6 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="10dp"
     android:fitsSystemWindows="true"
     tools:context=".JumpManageActivity">
 
@@ -32,14 +31,21 @@
         android:text="+"
         android:textSize="24sp" />
 
-    <GridView
-        android:id="@+id/startlist"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/settings"
         android:layout_alignParentTop="true"
         android:layout_marginBottom="16dp"
-        android:numColumns="2">
+        android:fillViewport="true">
 
-    </GridView>
+        <GridLayout
+            android:id="@+id/startlist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp" />
+
+    </ScrollView>
 </RelativeLayout>

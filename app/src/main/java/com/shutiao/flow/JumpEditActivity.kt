@@ -27,6 +27,12 @@ import org.json.JSONObject
 
 class JumpEditActivity : Activity() {
 
+    companion object {
+        const val RESULT_UPDATED = 1
+        const val RESULT_DELETED = 2
+        const val RESULT_ADDED = 3
+    }
+
     private fun getIconType(group: RadioGroup): String = when (group.checkedRadioButtonId) {
         R.id.rb_text -> "text"
         R.id.rb_image -> "image"
@@ -156,23 +162,39 @@ class JumpEditActivity : Activity() {
         save.setOnClickListener {
             if (!id.isNullOrEmpty()) {
                 OpenLink.clearIconCache(this, id)
+                OpenLink(
+                    name.text.toString(),
+                    description.text.toString(),
+                    matchRule.text.toString(),
+                    replaceRule.text.toString(),
+                    packageName.text.toString(),
+                    activity.text.toString(),
+                    uri.text.toString(),
+                    extraKey.text.toString(),
+                    extraValue.text.toString(),
+                    getIconType(iconTypeGroup),
+                    iconValue.text.toString(),
+                    cbShowAssistant.isChecked
+                ).save(id)
+                intent.putExtra("id", id)
+                setResult(RESULT_UPDATED, intent)
+            } else {
+                OpenLink(
+                    name.text.toString(),
+                    description.text.toString(),
+                    matchRule.text.toString(),
+                    replaceRule.text.toString(),
+                    packageName.text.toString(),
+                    activity.text.toString(),
+                    uri.text.toString(),
+                    extraKey.text.toString(),
+                    extraValue.text.toString(),
+                    getIconType(iconTypeGroup),
+                    iconValue.text.toString(),
+                    cbShowAssistant.isChecked
+                ).save()
+                setResult(RESULT_ADDED, intent)
             }
-            OpenLink(
-                name.text.toString(),
-                description.text.toString(),
-                matchRule.text.toString(),
-                replaceRule.text.toString(),
-                packageName.text.toString(),
-                activity.text.toString(),
-                uri.text.toString(),
-                extraKey.text.toString(),
-                extraValue.text.toString(),
-                getIconType(iconTypeGroup),
-                iconValue.text.toString(),
-                cbShowAssistant.isChecked
-            ).save(id)
-            intent.putExtra("id", id)
-            setResult(1, intent)
             finish()
         }
 
@@ -187,7 +209,6 @@ class JumpEditActivity : Activity() {
                 put("uri", uri.text.toString())
                 put("extraKey", extraKey.text.toString())
                 put("extraValue", extraValue.text.toString())
-                // 不导出图标信息
             }
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             clipboard.setPrimaryClip(ClipData.newPlainText("backup", json.toString()))
@@ -213,7 +234,7 @@ class JumpEditActivity : Activity() {
         delete.setOnClickListener {
             OpenLink.delete(id!!)
             intent.putExtra("id", id)
-            setResult(1, intent)
+            setResult(RESULT_DELETED, intent)
             finish()
         }
     }
@@ -226,7 +247,6 @@ class JumpEditActivity : Activity() {
 
         Thread {
             val pm = packageManager
-            // 优化：移除 GET_META_DATA，加快查询速度
             val apps = pm.getInstalledApplications(0)
                 .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 || it.packageName == "com.android.browser" }
                 .map {
@@ -269,7 +289,6 @@ class JumpEditActivity : Activity() {
                 holder.name.text = app.name
                 holder.pkg.text = app.packageName
 
-                // 调用全局 App 图标加载器，实现全应用复用
                 OpenLink.loadAppIcon(context, app.packageName, holder.icon)
 
                 return view
@@ -299,7 +318,6 @@ class JumpEditActivity : Activity() {
         if (resultCode == RESULT_OK && requestCode == 2) {
             val uri = data?.data ?: return
 
-            // 尝试获取真实路径
             var path: String? = null
             if (uri.scheme == "file") {
                 path = uri.path
@@ -319,7 +337,6 @@ class JumpEditActivity : Activity() {
                 }
             }
 
-            // 如果无法获取路径（例如来自某些云盘或新版 Android 的安全限制），则将文件复制到私有目录
             if (path == null) {
                 try {
                     val fileName = "icon_${System.currentTimeMillis()}.png"
@@ -340,7 +357,6 @@ class JumpEditActivity : Activity() {
 
             if (path != null) {
                 findViewById<TextView>(R.id.iconValue).text = path
-                // 这里手动调用刷新
                 val type = findViewById<RadioGroup>(R.id.iconTypeGroup).checkedRadioButtonId
                 val nameView = findViewById<EditText>(R.id.name)
                 val pkgView = findViewById<EditText>(R.id.packageName)

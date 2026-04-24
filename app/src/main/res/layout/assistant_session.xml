@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -22,7 +23,8 @@
         android:text="完成"
         android:textColor="@android:color/white"
         android:textSize="14sp"
-        android:visibility="gone" />
+        android:visibility="gone"
+        tools:ignore="HardcodedText" />
 
     <LinearLayout
         android:id="@+id/assistant_root"
@@ -32,7 +34,7 @@
         android:layout_margin="8dp"
         android:background="@drawable/card_bg"
         android:orientation="vertical"
-        android:paddingStart="16dp"
+        android:paddingStart="12dp"
         android:paddingTop="8dp"
         android:paddingEnd="8dp"
         android:paddingBottom="8dp">
@@ -42,43 +44,32 @@
             android:id="@+id/side_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
             android:gravity="end"
-            android:orientation="horizontal"
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="visible">
 
             <Button
                 android:id="@+id/btn_settings"
+                style="?android:attr/buttonBarButtonStyle"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:text="⚙"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="20sp" />
+                android:textSize="20sp"
+                tools:ignore="HardcodedText" />
 
             <Button
                 android:id="@+id/btn_extract_text"
+                style="?android:attr/buttonBarButtonStyle"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:text="⛶"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="20sp" />
+                android:textSize="20sp"
+                tools:ignore="HardcodedText" />
         </LinearLayout>
 
         <!-- 选择器列表 -->
-        <ScrollView
-            android:id="@+id/selector_scroll"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:id="@+id/selector_row"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-        </ScrollView>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -92,7 +83,10 @@
                 android:id="@+id/selected_icon"
                 android:layout_width="35dp"
                 android:layout_height="35dp"
-                android:scaleType="fitCenter" />
+                android:layout_marginEnd="4dp"
+                android:contentDescription="当前搜索项"
+                android:scaleType="fitCenter"
+                tools:ignore="HardcodedText" />
 
             <com.shutiao.flow.BackEditText
                 android:id="@+id/assistant_input"
@@ -105,17 +99,17 @@
                 android:inputType="textMultiLine"
                 android:maxLines="5"
                 android:padding="4dp"
-                android:textColor="?android:attr/textColorPrimary"
-                android:textColorHint="?android:attr/textColorSecondary" />
+                tools:ignore="HardcodedText" />
 
             <Button
                 android:id="@+id/btn_expand"
+                style="?android:attr/buttonBarButtonStyle"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:background="@android:color/transparent"
                 android:text="⋮"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="20sp" />
+                android:textSize="20sp"
+                tools:ignore="HardcodedText" />
         </LinearLayout>
 
         <HorizontalScrollView

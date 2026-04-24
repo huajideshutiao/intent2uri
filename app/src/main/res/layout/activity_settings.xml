@@ -1,40 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_marginLeft="8dp"
+    android:layout_marginRight="8dp"
+    android:fitsSystemWindows="true"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:fitsSystemWindows="true">
+    tools:ignore="HardcodedText">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         android:text="数据管理"
         android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
+        android:textStyle="bold" />
 
     <Button
         android:id="@+id/btn_backup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="备份配置"
-        android:layout_marginBottom="8dp"/>
+        android:layout_marginBottom="8dp"
+        android:text="备份配置" />
 
     <Button
         android:id="@+id/btn_import"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="导入配置"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp"
+        android:text="导入配置" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         android:text="浏览器设置"
         android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
+        android:textStyle="bold" />
 
     <Button
         android:id="@+id/btn_select_browser"

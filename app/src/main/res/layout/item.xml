@@ -1,64 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/soutu_result_item"
-    android:layout_width="match_parent"
+    android:layout_width="0dp"
     android:layout_height="wrap_content"
-    android:layout_margin="10dp"
+    android:layout_margin="4dp"
     android:background="@drawable/card_bg"
     android:elevation="4dp"
-    android:padding="10dp">
+    android:padding="12dp"
+    tools:layout_width="match_parent">
 
-    <FrameLayout
-        android:layout_width="0dp"
-        android:layout_height="80dp"
+    <ImageView
+        android:id="@+id/imageView4"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_gravity="center"
         android:layout_marginEnd="10dp"
-        android:layout_weight="1">
-
-        <ImageView
-            android:id="@+id/imageView4"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:adjustViewBounds="true"
-            android:scaleType="fitCenter" />
-
-        <TextView
-            android:id="@+id/iconText"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#CCCCCC"
-            android:gravity="center"
-            android:textColor="#FFFFFF"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-    </FrameLayout>
+        android:contentDescription="图标"
+        android:scaleType="fitCenter"
+        tools:ignore="HardcodedText" />
 
     <LinearLayout
         android:id="@+id/text"
         android:layout_width="0dp"
         android:layout_height="80dp"
-        android:layout_weight="2"
-        android:orientation="vertical"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp">
+        android:layout_weight="1"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:text="TextView"
             android:textColor="?android:attr/textColorPrimary"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            tools:text="项目名" />
 
         <TextView
             android:id="@+id/description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="14sp" />
+            tools:text="项目描述" />
 
     </LinearLayout>
 
