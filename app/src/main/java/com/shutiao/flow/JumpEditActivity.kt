@@ -1,5 +1,6 @@
 package com.shutiao.flow
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.ClipData
@@ -39,6 +40,7 @@ class JumpEditActivity : Activity() {
         else -> "app"
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_jump_edit)
@@ -65,15 +67,30 @@ class JumpEditActivity : Activity() {
         val iconValue = findViewById<TextView>(R.id.iconValue)
         val iconPreview = findViewById<ImageView>(R.id.iconPreview)
         val btnPickApp = findViewById<Button>(R.id.btn_pick_app)
+        val btnResetIcon = findViewById<Button>(R.id.btn_reset_icon)
 
         fun refreshPreview() {
+            val type = getIconType(iconTypeGroup)
+            val value = iconValue.text.toString()
+
+            if (type == "image" && value.isEmpty()) {
+                iconPreview.setImageResource(android.R.drawable.ic_menu_gallery)
+                return
+            }
+            
             val tempLink = OpenLink(
                 name.text.toString(), "", "", "",
                 packageName.text.toString(), "", "", "", "",
-                getIconType(iconTypeGroup), iconValue.text.toString(),
+                type, value,
                 cbShowAssistant.isChecked
             )
             tempLink.loadIconAsync(this, iconPreview)
+        }
+
+        btnResetIcon.setOnClickListener {
+            iconValue.text = ""
+            iconTypeGroup.check(R.id.rb_app)
+            refreshPreview()
         }
 
         iconPreview.setOnClickListener {
@@ -240,16 +257,19 @@ class JumpEditActivity : Activity() {
     }
 
     private fun showAppSelector(onSelected: (String) -> Unit) {
-        val dialog = AlertDialog.Builder(this)
+        val progressDialog = AlertDialog.Builder(this)
             .setTitle("正在加载应用列表...")
             .setView(ProgressBar(this).apply { setPadding(50, 50, 50, 50) })
+            .setCancelable(true)
             .show()
 
         Thread {
             val pm = packageManager
+            // 尽可能快地获取基本信息，不调用 loadLabel()
             val apps = pm.getInstalledApplications(0)
                 .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 || it.packageName == "com.android.browser" }
                 .map {
+                    // 这里仍然调用 loadLabel 是因为排序需要，但在后台线程执行
                     AppInfo(
                         it.loadLabel(pm).toString(),
                         it.packageName,
@@ -259,7 +279,7 @@ class JumpEditActivity : Activity() {
                 .sortedBy { it.name }
 
             runOnUiThread {
-                dialog.dismiss()
+                progressDialog.dismiss()
                 showAppListDialog(apps, onSelected)
             }
         }.start()

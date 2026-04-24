@@ -23,7 +23,45 @@ class App : Application() {
                 .debuggable(BuildConfig.DEBUG)
                 .version(BuildConfig.VERSION_CODE)
         }
-        val su by lazy { ProcessBuilder("su").start().outputStream }
+        private var suProcess: Process? = null
+        private var suStream: java.io.OutputStream? = null
+
+        fun runRootCommand(command: String) {
+            val cmd = if (command.endsWith("\n")) command else "$command\n"
+            try {
+                val isAlive = try {
+                    suProcess?.exitValue()
+                    false
+                } catch (_: IllegalThreadStateException) {
+                    true
+                }
+
+                if (suProcess == null || suStream == null || !isAlive) {
+                    suProcess = ProcessBuilder("su").start()
+                    suStream = suProcess!!.outputStream
+                }
+
+                suStream?.run {
+                    write(cmd.toByteArray())
+                    flush()
+                }
+            } catch (_: Exception) {
+                suProcess?.destroy()
+                suProcess = null
+                suStream = null
+                // 如果第一次失败，尝试重新启动一次进程执行
+                try {
+                    suProcess = ProcessBuilder("su").start()
+                    suStream = suProcess!!.outputStream
+                    suStream?.run {
+                        write(cmd.toByteArray())
+                        flush()
+                    }
+                } catch (e2: Exception) {
+                    e2.printStackTrace()
+                }
+            }
+        }
     }
     override fun onCreate() {
         super.onCreate()

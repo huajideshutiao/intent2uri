@@ -87,6 +87,8 @@ class SettingsActivity : Activity() {
             for (item in OpenLink.datas) {
                 val json = JSONObject().apply {
                     put("name", item.name)
+                    put("iconType", item.iconType)
+                    put("iconValue", item.iconValue)
                     put("description", item.description)
                     put("matchRule", item.matchRule)
                     put("replaceRule", item.replaceRule)
@@ -95,6 +97,7 @@ class SettingsActivity : Activity() {
                     put("uri", item.uri)
                     put("extraKey", item.extraKey)
                     put("extraValue", item.extraValue)
+                    put("showInAssistant", item.showInAssistant)
                 }
                 jsonArray.put(json)
             }
@@ -128,6 +131,8 @@ class SettingsActivity : Activity() {
                 val json = jsonArray.getJSONObject(i)
                 val openLink = OpenLink(
                     name = json.getString("name"),
+                    iconType = json.getString("iconType"),
+                    iconValue = json.getString("iconValue"),
                     description = json.getString("description"),
                     matchRule = json.getString("matchRule"),
                     replaceRule = json.getString("replaceRule"),
@@ -135,7 +140,8 @@ class SettingsActivity : Activity() {
                     activity = json.getString("activity"),
                     uri = json.getString("uri"),
                     extraKey = json.getString("extraKey"),
-                    extraValue = json.getString("extraValue")
+                    extraValue = json.getString("extraValue"),
+                    showInAssistant = json.getBoolean("showInAssistant")
                 )
                 openLink.save()
             }

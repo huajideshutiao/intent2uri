@@ -8,9 +8,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.service.voice.VoiceInteractionSession
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.KeyEvent
@@ -35,6 +33,9 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
     private lateinit var input: BackEditText
     private lateinit var overlayContainer: FrameLayout
     private lateinit var selectedIcon: ImageView
+    private lateinit var rootContainer: View
+    private lateinit var assistantRoot: LinearLayout
+    private lateinit var btnExtractDone: Button
 
     private var currentSelectedLink: OpenLink? = null
 
@@ -54,24 +55,20 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
     }
 
     private lateinit var sessionView: View
-
-    private lateinit var btnExtractDone: Button
     private val selectedTexts = mutableListOf<String>()
 
     override fun onCreateContentView(): View {
         val inflater = themedContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as android.view.LayoutInflater
-        // Use an empty FrameLayout as the root to resolve layout parameters
         val parent = FrameLayout(themedContext)
         val view = inflater.inflate(R.layout.assistant_session, parent, false)
         sessionView = view
-        val rootContainer = view.findViewById<View>(R.id.root_container)
-        val assistantRoot = view.findViewById<LinearLayout>(R.id.assistant_root)
+        rootContainer = view.findViewById(R.id.root_container)
+        assistantRoot = view.findViewById(R.id.assistant_root)
         overlayContainer = view.findViewById(R.id.overlay_container)
         input = view.findViewById(R.id.assistant_input)
 
-        // 核心修改：在输入法弹出时监听返回键，实现一键退出
         input.onBackListener = {
-            performBackAction()
+            safeFinish()
             true
         }
 
@@ -84,35 +81,23 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         val btnExtract = view.findViewById<Button>(R.id.btn_extract_text)
         btnExtractDone = view.findViewById(R.id.btn_extract_done_float)
 
-        // 键盘避让与悬浮逻辑
         val layoutListener = object : ViewTreeObserver.OnGlobalLayoutListener {
             private val r = Rect()
             override fun onGlobalLayout() {
                 view.getWindowVisibleDisplayFrame(r)
                 val screenHeight = view.rootView.height
                 val keypadHeight = screenHeight - r.bottom
-
-                if (keypadHeight > screenHeight * 0.15) {
-                    val targetTranslation = -keypadHeight.toFloat()
-                    assistantRoot.translationY = targetTranslation
-                } else {
-                    assistantRoot.translationY = 0f
-                }
+                assistantRoot.translationY = if (keypadHeight > screenHeight * 0.15) -keypadHeight.toFloat() else 0f
             }
         }
         view.viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
 
-        // 核心修改：确保点击 UI 组件本身不会触发关闭逻辑
         rootContainer.setOnClickListener { finish() }
-        assistantRoot.setOnClickListener { /* 消费事件 */ }
-        sideBar.setOnClickListener { /* 消费事件 */ }
+        assistantRoot.setOnClickListener { }
+        sideBar.setOnClickListener { }
 
         val lastSelectedId = App.sharedPreferences.getString("selected_link_id", "")
-        currentSelectedLink = if (!lastSelectedId.isNullOrEmpty()) {
-            OpenLink.datas.find { it.id == lastSelectedId } ?: OpenLink.datas.firstOrNull()
-        } else {
-            OpenLink.datas.firstOrNull()
-        }
+        currentSelectedLink = OpenLink.datas.find { it.id == lastSelectedId } ?: OpenLink.datas.firstOrNull()
         updateSelectedToolUI()
 
         setupIconRow()
@@ -123,22 +108,13 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
             input.setSelection(lastInput.length)
         }
 
-        input.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                App.sharedPreferences.edit().putString("last_input", s?.toString() ?: "").apply()
-            }
-
-            override fun afterTextChanged(s: Editable?) {}
-        })
-
         input.setOnEditorActionListener { _, actionId, event ->
             val isEnterDown =
                 event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER
             if (actionId == EditorInfo.IME_ACTION_SEARCH || isEnterDown) {
                 val text = input.text.toString()
                 if (text.isNotEmpty()) {
-                    currentSelectedLink?.start(text) ?: OpenLink.datas.firstOrNull()?.start(text)
+                    currentSelectedLink?.start(text)
                     finish()
                 }
                 true
@@ -146,11 +122,7 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         }
 
         btnExpand.setOnClickListener {
-            if (sideBar.visibility == View.VISIBLE) {
-                sideBar.visibility = View.GONE
-            } else {
-                sideBar.visibility = View.VISIBLE
-            }
+            sideBar.visibility = if (sideBar.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
         btnSettings.setOnClickListener {
@@ -181,12 +153,8 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
 
     private var isFinishing = false
 
-    private fun performBackAction() {
-        safeFinish()
-    }
-
     override fun onBackPressed() {
-        performBackAction()
+        safeFinish()
     }
 
     private fun safeFinish() {
@@ -199,11 +167,11 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
     }
 
     private fun exitExtractMode() {
-        sessionView.findViewById<View>(R.id.root_container).setBackgroundColor(0x80000000.toInt())
+        rootContainer.setBackgroundColor(0x80000000.toInt())
         overlayContainer.removeAllViews()
         overlayContainer.visibility = View.GONE
         btnExtractDone.visibility = View.GONE
-        sessionView.findViewById<View>(R.id.assistant_root).visibility = View.VISIBLE
+        assistantRoot.visibility = View.VISIBLE
         selectedTexts.clear()
 
         input.requestFocus()
@@ -230,6 +198,13 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
                 imm.showSoftInput(input, 0)
             }
         }, 200)
+    }
+
+    override fun onHide() {
+        super.onHide()
+        if (::input.isInitialized) {
+            App.sharedPreferences.edit().putString("last_input", input.text.toString()).apply()
+        }
     }
 
     private fun setupIconRow() {
@@ -291,14 +266,13 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
 
     private fun extractText() {
         val structure = assistStructure ?: return
-        sessionView.findViewById<View>(R.id.root_container).setBackgroundColor(Color.TRANSPARENT)
+        rootContainer.setBackgroundColor(Color.TRANSPARENT)
         overlayContainer.removeAllViews()
         overlayContainer.visibility = View.VISIBLE
         btnExtractDone.visibility = View.VISIBLE
         selectedTexts.clear()
 
-        // 进入提取模式时，隐藏主界面以提供“独立界面”感
-        sessionView.findViewById<View>(R.id.assistant_root).visibility = View.GONE
+        assistantRoot.visibility = View.GONE
         sideBar.visibility = View.GONE
 
         // 自动收起输入法
