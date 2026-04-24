@@ -1,11 +1,11 @@
 package com.shutiao.flow
 
-import android.app.assist.AssistContent
 import android.app.assist.AssistStructure
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.service.voice.VoiceInteractionSession
 import android.text.Editable
@@ -41,10 +41,7 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
     override fun onCreate() {
         super.onCreate()
         window?.window?.apply {
-            setSoftInputMode(
-                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
-                        WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
-            )
+            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
             setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
         }
     }
@@ -63,7 +60,9 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
 
     override fun onCreateContentView(): View {
         val inflater = themedContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as android.view.LayoutInflater
-        val view = inflater.inflate(R.layout.assistant_session, null)
+        // Use an empty FrameLayout as the root to resolve layout parameters
+        val parent = FrameLayout(themedContext)
+        val view = inflater.inflate(R.layout.assistant_session, parent, false)
         sessionView = view
         val rootContainer = view.findViewById<View>(R.id.root_container)
         val assistantRoot = view.findViewById<LinearLayout>(R.id.assistant_root)
@@ -209,7 +208,7 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
 
         input.requestFocus()
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
+        imm.showSoftInput(input, 0)
     }
 
     private fun updateSelectedToolUI() {
@@ -228,7 +227,7 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         input.postDelayed({
             if (!isFinishing) {
                 val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
+                imm.showSoftInput(input, 0)
             }
         }, 200)
     }
@@ -283,10 +282,11 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         }
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onHandleAssist(data: Bundle?, structure: AssistStructure?, content: AssistContent?) {
-        super.onHandleAssist(data, structure, content)
-        this.assistStructure = structure
+    override fun onHandleAssist(state: AssistState) {
+        super.onHandleAssist(state)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            this.assistStructure = state.assistStructure
+        }
     }
 
     private fun extractText() {

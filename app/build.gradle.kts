@@ -1,22 +1,30 @@
+import com.android.build.api.dsl.ApplicationExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 //    alias(libs.plugins.kotlinx.serialization)
 }
 
-android {
+configure<ApplicationExtension> {
+    val keystorePropertiesFile = rootProject.file("local.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    }
+
     signingConfigs {
         create("release") {
-            storeFile = file("D:\\shutiao.jks")
-            keyAlias = "gv92207@gmail.com"
-            keyPassword = "ET-GruBlhqkmXs55"
-            storePassword = "_1xcvFN3-zfxt9KP"
+            storeFile = keystoreProperties["signing.storeFile"]?.let { file(it as String) }
+            storePassword = keystoreProperties["signing.storePassword"] as String?
+            keyAlias = keystoreProperties["signing.keyAlias"] as String?
+            keyPassword = keystoreProperties["signing.keyPassword"] as String?
         }
     }
     namespace = "com.shutiao.flow"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.shutiao.flow"
         minSdk = 24
@@ -39,17 +47,24 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+
+    packaging {
+        resources {
+            excludes.add("kotlin/**")
         }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

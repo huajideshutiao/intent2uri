@@ -50,9 +50,9 @@
 
             <Button
                 android:id="@+id/btn_settings"
-                style="?android:attr/buttonBarButtonStyle"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
+                android:background="@android:color/transparent"
                 android:text="⚙"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="20sp"
@@ -60,9 +60,9 @@
 
             <Button
                 android:id="@+id/btn_extract_text"
-                style="?android:attr/buttonBarButtonStyle"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
+                android:background="@android:color/transparent"
                 android:text="⛶"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="20sp"
@@ -103,9 +103,9 @@
 
             <Button
                 android:id="@+id/btn_expand"
-                style="?android:attr/buttonBarButtonStyle"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:background="@android:color/transparent"
                 android:text="⋮"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="20sp"
