@@ -38,15 +38,16 @@
         android:layout_above="@+id/settings"
         android:layout_alignParentTop="true"
         android:layout_marginBottom="16dp"
-        android:fillViewport="true">
+        android:clipToPadding="false"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp">
 
         <GridLayout
             android:id="@+id/startlist"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:columnCount="2"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp" />
+            android:columnCount="2" />
 
     </ScrollView>
+
 </RelativeLayout>

@@ -32,10 +32,11 @@ class JumpActivity : Activity() {
             }
 
             else -> {
-                val text = if (intent.action == Intent.ACTION_SEND) {
-                    intent.getStringExtra(Intent.EXTRA_TEXT)
-                } else {
-                    intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+                val text = when (intent.action) {
+                    Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+                    Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+                    Intent.ACTION_WEB_SEARCH, Intent.ACTION_SEARCH -> intent.getStringExtra("query")
+                    else -> ""
                 }
                 if (!text.isNullOrEmpty()) {
                     startService(Intent(this, AssistantService::class.java).apply {
