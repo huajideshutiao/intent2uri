@@ -88,7 +88,7 @@
                 android:scaleType="fitCenter"
                 tools:ignore="HardcodedText" />
 
-            <com.shutiao.flow.BackEditText
+            <EditText
                 android:id="@+id/assistant_input"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

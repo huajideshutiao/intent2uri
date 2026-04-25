@@ -14,11 +14,12 @@
                 android:startX="0"
                 android:startY="0"
                 android:type="linear">
+                <!-- 深邃夜色渐变，提升品质感 -->
                 <item
-                    android:color="#FF2C3E50"
+                    android:color="#FF141E30"
                     android:offset="0.0" />
                 <item
-                    android:color="#FF3498DB"
+                    android:color="#FF243B55"
                     android:offset="1.0" />
             </gradient>
         </aapt:attr>

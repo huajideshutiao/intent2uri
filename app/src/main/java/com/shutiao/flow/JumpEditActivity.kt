@@ -265,11 +265,9 @@ class JumpEditActivity : Activity() {
 
         Thread {
             val pm = packageManager
-            // 尽可能快地获取基本信息，不调用 loadLabel()
+            // 获取所有已安装的应用（包括系统应用）
             val apps = pm.getInstalledApplications(0)
-                .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 || it.packageName == "com.android.browser" }
                 .map {
-                    // 这里仍然调用 loadLabel 是因为排序需要，但在后台线程执行
                     AppInfo(
                         it.loadLabel(pm).toString(),
                         it.packageName,
@@ -286,9 +284,13 @@ class JumpEditActivity : Activity() {
     }
 
     private fun showAppListDialog(apps: List<AppInfo>, onSelected: (String) -> Unit) {
-        val dialog = AlertDialog.Builder(this).create()
-        val listView = ListView(this)
-        val adapter = object : ArrayAdapter<AppInfo>(this, R.layout.item_app_selector, apps) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_app_selector, null)
+        val searchBar = dialogView.findViewById<EditText>(R.id.search_bar)
+        val listView = dialogView.findViewById<ListView>(R.id.app_list)
+
+        // 使用可变列表以便过滤
+        val displayApps = apps.toMutableList()
+        val adapter = object : ArrayAdapter<AppInfo>(this, R.layout.item_app_selector, displayApps) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val holder: ViewHolder
                 val view: View
@@ -315,11 +317,34 @@ class JumpEditActivity : Activity() {
             }
         }
         listView.adapter = adapter
+
+        searchBar.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s.toString().lowercase()
+                val filtered = apps.filter {
+                    it.name.lowercase().contains(query) || it.packageName.lowercase().contains(query)
+                }
+                adapter.clear()
+                adapter.addAll(filtered)
+                adapter.notifyDataSetChanged()
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
         listView.setOnItemClickListener { _, _, position, _ ->
-            onSelected(apps[position].packageName)
-            dialog.dismiss()
+            // 注意这里要从 adapter 中获取，因为 displayApps 已经被 clear/addAll 修改了
+            val selectedApp = adapter.getItem(position)
+            if (selectedApp != null) {
+                onSelected(selectedApp.packageName)
+                dialog.dismiss()
+            }
         }
-        dialog.setView(listView)
         dialog.show()
     }
 

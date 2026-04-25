@@ -18,6 +18,7 @@ import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -30,7 +31,7 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
     private var assistStructure: AssistStructure? = null
     private lateinit var iconRow: LinearLayout
     private lateinit var sideBar: LinearLayout
-    private lateinit var input: BackEditText
+    private lateinit var input: EditText
     private lateinit var overlayContainer: FrameLayout
     private lateinit var selectedIcon: ImageView
     private lateinit var rootContainer: View
@@ -66,11 +67,6 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         assistantRoot = view.findViewById(R.id.assistant_root)
         overlayContainer = view.findViewById(R.id.overlay_container)
         input = view.findViewById(R.id.assistant_input)
-
-        input.onBackListener = {
-            safeFinish()
-            true
-        }
 
         iconRow = view.findViewById(R.id.icon_row)
         sideBar = view.findViewById(R.id.side_bar)

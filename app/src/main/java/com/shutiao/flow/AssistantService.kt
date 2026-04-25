@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.service.voice.VoiceInteractionService
 import android.service.voice.VoiceInteractionSession.SHOW_SOURCE_APPLICATION
+import android.service.voice.VoiceInteractionSession.SHOW_WITH_ASSIST
+import android.service.voice.VoiceInteractionSession.SHOW_WITH_SCREENSHOT
 
 class AssistantService : VoiceInteractionService() {
 
@@ -13,7 +15,7 @@ class AssistantService : VoiceInteractionService() {
             val args = Bundle().apply {
                 putString("share_text", text)
             }
-            showSession(args, SHOW_SOURCE_APPLICATION)
+            showSession(args, SHOW_SOURCE_APPLICATION or SHOW_WITH_ASSIST or SHOW_WITH_SCREENSHOT)
         }
         return super.onStartCommand(intent, flags, startId)
     }

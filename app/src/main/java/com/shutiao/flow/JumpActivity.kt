@@ -8,16 +8,6 @@ import android.os.Bundle
 class JumpActivity : Activity() {
     private fun open(intent: Intent) {
         when (intent.action) {
-            Intent.ACTION_SEND -> {
-                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-                if (!text.isNullOrEmpty()) {
-                    startService(Intent(this, AssistantService::class.java).apply {
-                        action = "com.shutiao.flow.SHOW_ASSISTANT"
-                        putExtra("share_text", text)
-                    })
-                }
-            }
-
             Intent.ACTION_VIEW -> {
                 val uri = intent.data ?: return
                 when (uri.scheme) {
@@ -38,6 +28,20 @@ class JumpActivity : Activity() {
                             )
                         } else startActivity(newIntent)
                     }
+                }
+            }
+
+            else -> {
+                val text = if (intent.action == Intent.ACTION_SEND) {
+                    intent.getStringExtra(Intent.EXTRA_TEXT)
+                } else {
+                    intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+                }
+                if (!text.isNullOrEmpty()) {
+                    startService(Intent(this, AssistantService::class.java).apply {
+                        action = "com.shutiao.flow.SHOW_ASSISTANT"
+                        putExtra("share_text", text)
+                    })
                 }
             }
         }
