@@ -9,6 +9,9 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.service.voice.VoiceInteractionSession
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Patterns
 import android.view.ContextThemeWrapper
 import android.view.GestureDetector
 import android.view.HapticFeedbackConstants
@@ -35,6 +38,7 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
     private lateinit var selectedIcon: ImageView
     private lateinit var assistantRoot: LinearLayout
     private lateinit var btnExtractDone: Button
+    private lateinit var urlBar: TextView
     private lateinit var rootContainer: View
     private lateinit var sideBar: View
 
@@ -63,6 +67,7 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
                 input = findViewById(R.id.assistant_input)
                 selectedIcon = findViewById(R.id.selected_icon)
                 btnExtractDone = findViewById(R.id.btn_extract_done_float)
+                urlBar = findViewById(R.id.url_bar)
 
                 viewTreeObserver.addOnGlobalLayoutListener {
                     val r = Rect().apply { getWindowVisibleDisplayFrame(this) }
@@ -122,27 +127,14 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
                 }
                 setupIconRow(findViewById(R.id.icon_row))
 
-                input.setText(App.sharedPreferences.getString("last_input", ""))
                 input.setOnEditorActionListener { _, id, event ->
                     if (id == EditorInfo.IME_ACTION_SEARCH || id == EditorInfo.IME_ACTION_GO ||
                         (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
                     ) {
                         val key = input.text.toString()
                         if (key.isNotEmpty()) {
-                            val link = currentLink
-                            if (link != null) {
-                                link.start(key)
-                                finish()
-                            } else {
-                                var matched = false
-                                OpenLink.datas.forEach {
-                                    if (it.matchRule.isNotEmpty() && key.contains(Regex(it.matchRule))) {
-                                        it.start(key)
-                                        matched = true
-                                    }
-                                }
-                                if (matched) finish()
-                            }
+                            OpenLink.smartSearch(context, key, currentLink)
+                            finish()
                         }
                         true
                     } else false
@@ -164,6 +156,29 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
                         ?.let { input.setText(it); input.setSelection(it.length) }
                     toggleExtractMode(false)
                 }
+
+                urlBar.setOnClickListener {
+                    val key = input.text.toString()
+                    if (key.isNotEmpty()) {
+                        OpenLink.smartSearch(context, key, null)
+                        finish()
+                    }
+                }
+                input.addTextChangedListener(object : TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                        val text = s?.toString() ?: ""
+                        if (Patterns.WEB_URL.matcher(text).matches()) {
+                            urlBar.text = "直接打开: $text"
+                            urlBar.visibility = View.VISIBLE
+                        } else {
+                            urlBar.visibility = View.GONE
+                        }
+                    }
+
+                    override fun afterTextChanged(s: Editable?) {}
+                })
+                input.setText(App.sharedPreferences.getString("last_input", ""))
             }
 
     override fun onBackPressed() = safeFinish()
@@ -175,6 +190,7 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
     }
 
     private fun toggleExtractMode(enabled: Boolean) {
+        if (enabled) urlBar.visibility = View.GONE
         rootContainer.setBackgroundColor(if (enabled) Color.TRANSPARENT else 0x80000000.toInt())
         overlayContainer.visibility = if (enabled) View.VISIBLE else View.GONE
         btnExtractDone.visibility = if (enabled) View.VISIBLE else View.GONE

@@ -1,5 +1,6 @@
 package com.shutiao.flow
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.ContentValues
@@ -17,6 +18,7 @@ import android.net.Uri
 import android.os.IBinder
 import android.util.Base64
 import android.util.LruCache
+import android.util.Patterns
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -239,6 +241,45 @@ data class OpenLink(
             App.dbHelper.delete("list", "id = ?", arrayOf(id))
             _datas?.removeIf { it.id == id }
         }
+
+        fun openExternal(context: Context, intent: Intent) {
+            val resolveInfo = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            if (resolveInfo?.activityInfo?.packageName == context.packageName || resolveInfo == null) {
+                intent.setPackage(App.sharedPreferences.getString("browser", ""))
+            }
+            if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            try {
+                context.startActivity(intent)
+            } catch (_: Exception) {
+                if (intent.getPackage() != null) {
+                    intent.setPackage(null)
+                    try {
+                        context.startActivity(intent)
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+        }
+
+        fun smartSearch(context: Context, key: String, item: OpenLink? = null, intent: Intent? = null) {
+            val target = item ?: datas.find { it.matchRule.isNotEmpty() && key.contains(Regex(it.matchRule)) }
+            if (target != null) {
+                target.start(key)
+            } else if (intent != null) {
+                openExternal(context, intent)
+            } else if (key.isNotEmpty()) {
+                if (Patterns.WEB_URL.matcher(key).matches()) {
+                    val uri = try {
+                        if (key.contains("://")) Uri.parse(key) else Uri.parse("http://$key")
+                    } catch (_: Exception) {
+                        null
+                    }
+                    if (uri != null) openExternal(context, Intent(Intent.ACTION_VIEW, uri))
+                } else {
+                    openExternal(context, Intent(Intent.ACTION_WEB_SEARCH).putExtra("query", key))
+                }
+            }
+        }
     }
 
     fun save(id: String? = "") {
@@ -443,7 +484,7 @@ fun showBrowserSelector(context: Context, onCancel: (() -> Unit)? = null) {
             pm.queryIntentActivities(it, PackageManager.MATCH_ALL)
         }.filter { it.activityInfo.packageName != context.packageName }
 
-        (context as? android.app.Activity)?.runOnUiThread {
+        (context as? Activity)?.runOnUiThread {
             progressDialog.dismiss()
             if (browserList.isEmpty()) {
                 Toast.makeText(context, "未找到浏览器", Toast.LENGTH_SHORT).show()

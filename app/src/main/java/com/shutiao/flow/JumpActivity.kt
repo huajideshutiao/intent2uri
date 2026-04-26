@@ -2,7 +2,6 @@ package com.shutiao.flow
 
 import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 
 class JumpActivity : Activity() {
@@ -11,23 +10,13 @@ class JumpActivity : Activity() {
             Intent.ACTION_VIEW -> {
                 val uri = intent.data ?: return
                 when (uri.scheme) {
-                    "kkp" -> OpenLink.datas.first { it.id == uri.authority!! }.start((uri.path ?: "").drop(1))
-                    else -> {
-                        val key = uri.toString()
-                        OpenLink.datas.find {
-                            it.matchRule.isNotEmpty() && key.contains(Regex(it.matchRule))
-                        }?.let {
-                            it.start(key)
-                            return
-                        }
-                        val newIntent = Intent(Intent.ACTION_VIEW, uri).putExtras(intent.extras ?: Bundle())
-                        val resolveInfo = packageManager.resolveActivity(newIntent, PackageManager.MATCH_DEFAULT_ONLY)
-                        if (resolveInfo == null || resolveInfo.activityInfo.packageName == packageName) {
-                            startActivity(
-                                newIntent.setPackage(App.sharedPreferences.getString("browser", ""))
-                            )
-                        } else startActivity(newIntent)
-                    }
+                    "kkp" -> OpenLink.smartSearch(
+                        this, (uri.path ?: "").drop(1), OpenLink.datas.find { it.id == uri.authority }
+                    )
+
+                    else -> OpenLink.smartSearch(
+                        this, uri.toString(), null, Intent(Intent.ACTION_VIEW, uri).putExtras(intent.extras ?: Bundle())
+                    )
                 }
             }
 
