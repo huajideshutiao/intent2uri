@@ -24,7 +24,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import kotlin.math.hypot
 
 class AssistantSession(context: Context) : VoiceInteractionSession(context) {
@@ -106,7 +105,6 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
                         currentLink = null
                         App.sharedPreferences.edit().putString("selected_link_id", "none").apply()
                         selectedIcon.setImageResource(android.R.drawable.ic_menu_search)
-                        Toast.makeText(context, "已清除默认项", Toast.LENGTH_SHORT).show()
                     } else {
                         val key = input.text.toString()
                         if (key.isNotEmpty()) {
@@ -199,7 +197,6 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
                     currentLink = link
                     App.sharedPreferences.edit().putString("selected_link_id", link.id).apply()
                     currentLink?.loadIconAsync(context, selectedIcon)
-                    Toast.makeText(context, "已设为默认项: ${link.name}", Toast.LENGTH_SHORT).show()
                     true
                 }
                 row.addView(this)
