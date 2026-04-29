@@ -7,6 +7,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -178,7 +181,7 @@ class JumpEditActivity : Activity() {
 
         save.setOnClickListener {
             if (!id.isNullOrEmpty()) {
-                OpenLink.clearIconCache(this, id)
+                OpenLink.clearIconCache(id)
                 OpenLink(
                     name.text.toString(),
                     description.text.toString(),
@@ -362,43 +365,7 @@ class JumpEditActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (resultCode == RESULT_OK && requestCode == 2) {
             val uri = data?.data ?: return
-
-            var path: String? = null
-            if (uri.scheme == "file") {
-                path = uri.path
-            } else if (uri.scheme == "content") {
-                val projection = arrayOf(android.provider.MediaStore.Images.Media.DATA)
-                try {
-                    contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val columnIndex = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.DATA)
-                            if (columnIndex != -1) {
-                                path = cursor.getString(columnIndex)
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-
-            if (path == null) {
-                try {
-                    val fileName = "icon_${System.currentTimeMillis()}.png"
-                    val file = java.io.File(filesDir, "custom_icons")
-                    if (!file.exists()) file.mkdirs()
-                    val destFile = java.io.File(file, fileName)
-                    contentResolver.openInputStream(uri)?.use { input ->
-                        java.io.FileOutputStream(destFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    path = destFile.absolutePath
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Toast.makeText(this, "图片选择失败", Toast.LENGTH_SHORT).show()
-                }
-            }
+            val path = saveResizedIcon(uri)
 
             if (path != null) {
                 findViewById<TextView>(R.id.iconValue).text = path
@@ -413,6 +380,42 @@ class JumpEditActivity : Activity() {
                     findViewById<CheckBox>(R.id.cb_show_assistant).isChecked
                 ).loadIconAsync(this, preview)
             }
+        }
+    }
+
+    private fun saveResizedIcon(uri: Uri): String? {
+        return try {
+            val size = (64 * resources.displayMetrics.density).toInt()
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+                contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, this) }
+            }
+
+            var inSampleSize = 1
+            while (options.outHeight / inSampleSize / 2 >= size && options.outWidth / inSampleSize / 2 >= size) {
+                inSampleSize *= 2
+            }
+
+            val bitmap = contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply {
+                    this.inSampleSize = inSampleSize
+                })
+            } ?: return null
+
+            val scaledBitmap = Bitmap.createScaledBitmap(bitmap, size, size, true)
+            if (scaledBitmap != bitmap) bitmap.recycle()
+
+            val dir = java.io.File(filesDir, "custom_icons").apply { if (!exists()) mkdirs() }
+            val destFile = java.io.File(dir, "icon_${System.currentTimeMillis()}.png")
+
+            java.io.FileOutputStream(destFile).use {
+                scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+            scaledBitmap.recycle()
+            destFile.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 }

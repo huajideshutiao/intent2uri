@@ -27,8 +27,6 @@ import android.widget.TextView
 import android.widget.Toast
 import org.json.JSONObject
 import rikka.shizuku.Shizuku
-import java.io.File
-import java.io.FileOutputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -64,16 +62,6 @@ data class OpenLink(
     fun getIconBitmap(context: Context): Bitmap {
         val key = cacheKey
         memoryCache.get(key)?.let { return it }
-
-        val cacheDir = File(context.cacheDir, "icons").apply { if (!exists()) mkdirs() }
-        val cacheFile = File(cacheDir, "icon_${key.hashCode().toString(16)}.png")
-
-        if (cacheFile.exists()) {
-            BitmapFactory.decodeFile(cacheFile.absolutePath)?.let {
-                memoryCache.put(key, it)
-                return it
-            }
-        }
 
         val size = (55 * context.resources.displayMetrics.density).toInt()
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -129,12 +117,6 @@ data class OpenLink(
         }
 
         memoryCache.put(key, bitmap)
-        if (!key.startsWith("pkg_")) {
-            try {
-                FileOutputStream(cacheFile).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            } catch (_: Exception) {
-            }
-        }
         return bitmap
     }
 
@@ -194,12 +176,9 @@ data class OpenLink(
             }
         }
 
-        fun clearIconCache(context: Context, id: String) {
+        fun clearIconCache(id: String) {
             datas.find { it.id == id }?.let { item ->
-                val key = item.cacheKey
-                memoryCache.remove(key)
-                File(File(context.cacheDir, "icons"), "icon_${key.hashCode().toString(16)}.png").takeIf { it.exists() }
-                    ?.delete()
+                memoryCache.remove(item.cacheKey)
             }
         }
 
