@@ -1,10 +1,21 @@
 package com.shutiao.flow
 
 import android.app.Activity
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 
 class JumpActivity : Activity() {
+
+    private fun isAssistant(context: Context): Boolean {
+        val assistant = Settings.Secure.getString(context.contentResolver, "assistant")
+        if (assistant.isNullOrEmpty()) return false
+        val cn = ComponentName.unflattenFromString(assistant)
+        return cn?.packageName == context.packageName
+    }
+
     private fun open(intent: Intent) {
         when (intent.action) {
             Intent.ACTION_VIEW -> {
@@ -28,10 +39,17 @@ class JumpActivity : Activity() {
                     else -> ""
                 }
                 if (!text.isNullOrEmpty()) {
-                    startService(Intent(this, AssistantService::class.java).apply {
-                        action = "com.shutiao.flow.SHOW_ASSISTANT"
-                        putExtra("share_text", text)
-                    })
+                    if (isAssistant(this)) {
+                        startService(Intent(this, AssistantService::class.java).apply {
+                            action = "com.shutiao.flow.SHOW_ASSISTANT"
+                            putExtra("share_text", text)
+                        })
+                    } else {
+                        startActivity(Intent(this, AssistantActivity::class.java).apply {
+                            putExtra("share_text", text)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        })
+                    }
                 }
             }
         }

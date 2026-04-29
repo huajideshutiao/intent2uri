@@ -79,6 +79,13 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".AssistantActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.Translucent"
+            android:windowSoftInputMode="adjustResize" />
+
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
