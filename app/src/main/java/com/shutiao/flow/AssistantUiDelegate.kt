@@ -149,7 +149,9 @@ class AssistantUiDelegate(
     fun onShow(text: String?) {
         val finalGenText = text ?: App.sharedPreferences.getString("last_input", "") ?: ""
         input.setText(finalGenText)
-        input.setSelection(finalGenText.length)
+        if (finalGenText.isNotEmpty()) {
+            input.selectAll()
+        }
         input.requestFocus()
         input.postDelayed({ imm.showSoftInput(input, 0) }, 100)
     }
@@ -163,6 +165,9 @@ class AssistantUiDelegate(
         assistantRoot.visibility = if (visible) View.VISIBLE else View.GONE
         if (visible) {
             sideBar.visibility = View.GONE
+            if (input.text.isNotEmpty()) {
+                input.selectAll()
+            }
             input.requestFocus()
             input.postDelayed({ imm.showSoftInput(input, 0) }, 100)
         }
