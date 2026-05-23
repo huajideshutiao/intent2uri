@@ -96,7 +96,8 @@ class AssistantUiDelegate(
             if (id == EditorInfo.IME_ACTION_SEARCH || id == EditorInfo.IME_ACTION_GO ||
                 (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
             ) {
-                performSearch(input.text.toString(), currentLink)
+                val targetLink = if (urlBar.visibility == View.VISIBLE) null else currentLink
+                performSearch(input.text.toString(), targetLink)
                 true
             } else false
         }
