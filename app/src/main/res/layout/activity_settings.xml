@@ -55,6 +55,13 @@
         android:textStyle="bold" />
 
     <Button
+        android:id="@+id/btn_set_max_lines"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="设置输入框最大行数" />
+
+    <Button
         android:id="@+id/btn_set_default_assistant"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

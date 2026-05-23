@@ -1,11 +1,14 @@
 package com.shutiao.flow
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.text.InputType
 import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONObject
@@ -34,6 +37,34 @@ class SettingsActivity : Activity() {
         findViewById<Button>(R.id.btn_set_default_assistant).setOnClickListener {
             openDefaultAssistantSettings()
         }
+
+        findViewById<Button>(R.id.btn_set_max_lines).setOnClickListener {
+            showMaxLinesDialog()
+        }
+    }
+
+    private fun showMaxLinesDialog() {
+        val currentMaxLines = App.sharedPreferences.getInt("assistant_max_lines", 5)
+        val editText = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(currentMaxLines.toString())
+            setSelection(text.length)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("输入框最大行数")
+            .setView(editText)
+            .setPositiveButton("确定") { _, _ ->
+                val value = editText.text.toString().toIntOrNull()
+                if (value == null || value <= 0) {
+                    Toast.makeText(this, "请输入大于 0 的整数", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                App.sharedPreferences.edit().putInt("assistant_max_lines", value).apply()
+                Toast.makeText(this, "已保存", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     private fun backupConfig() {
@@ -105,6 +136,7 @@ class SettingsActivity : Activity() {
             val backupJson = JSONObject().apply {
                 put("version", 1)
                 put("browser", App.sharedPreferences.getString("browser", ""))
+                put("assistant_max_lines", App.sharedPreferences.getInt("assistant_max_lines", 5))
                 put("rules", jsonArray)
             }
 
@@ -151,6 +183,11 @@ class SettingsActivity : Activity() {
                 if (browser.isNotEmpty()) {
                     App.sharedPreferences.edit().putString("browser", browser).apply()
                 }
+            }
+
+            if (backupJson.has("assistant_max_lines")) {
+                App.sharedPreferences.edit().putInt("assistant_max_lines", backupJson.getInt("assistant_max_lines"))
+                    .apply()
             }
 
             Toast.makeText(this, "导入成功", Toast.LENGTH_SHORT).show()

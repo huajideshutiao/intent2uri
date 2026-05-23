@@ -52,6 +52,9 @@ class AssistantUiDelegate(
             btnExtract.visibility = View.GONE
         }
 
+        val maxLines = App.sharedPreferences.getInt("assistant_max_lines", 5)
+        input.maxLines = maxLines
+
         assistantRoot.viewTreeObserver.addOnGlobalLayoutListener {
             val r = Rect().apply { assistantRoot.getWindowVisibleDisplayFrame(this) }
             val screenHeight = assistantRoot.rootView.height
