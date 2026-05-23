@@ -1,70 +1,96 @@
 package com.shutiao.flow
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.GridView
+import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.Toast
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.Executors
 
 class SoutuActivity : Activity() {
-    @SuppressLint("WrongThread")
+
+    companion object {
+        private val executor = Executors.newSingleThreadExecutor()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_soutu)
         window.setLayout(-1, -2)
-        val imageView = findViewById<android.widget.ImageView>(R.id.imageView)
-        val progressBar = findViewById<android.widget.ProgressBar>(R.id.progressBar)
-        val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)!!
-        val output = ByteArrayOutputStream()
-        val file: ByteArray
-        val fileSize = this.contentResolver.openFileDescriptor(uri, "r")?.use {
-            it.statSize
-        }!!
+        val imageView = findViewById<ImageView>(R.id.imageView)
+        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
+        val sites = findViewById<GridView>(R.id.sites)
+        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+        } ?: run { finish(); return }
+
+        progressBar.visibility = View.VISIBLE
+        sites.visibility = View.GONE
+
+        executor.execute {
+            val file = prepareImage(uri, imageView) ?: run {
+                runOnUiThread {
+                    Toast.makeText(this, "图片读取失败", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+                return@execute
+            }
+            runOnUiThread {
+                progressBar.visibility = View.GONE
+                sites.visibility = View.VISIBLE
+                bindSites(sites, progressBar, Soutu(file))
+            }
+        }
+    }
+
+    private fun prepareImage(uri: Uri, imageView: ImageView): ByteArray? = try {
+        val fileSize = contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: -1L
         val (width, height) = BitmapFactory.Options().run {
             inJustDecodeBounds = true
-            BitmapFactory.decodeStream(
-                this@SoutuActivity.contentResolver.openInputStream(uri),
-                null,
-                this
-            )
+            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, this) }
             Pair(outWidth, outHeight)
         }
         if (fileSize > 262_144) {
             val maxSide = maxOf(width, height)
             var sampleSize = 1
             while (maxSide / (sampleSize * 2) >= 800) sampleSize *= 2
-            val bitmap = BitmapFactory.decodeStream(
-                this.contentResolver.openInputStream(uri),
-                null,
-                BitmapFactory.Options().apply { inSampleSize = sampleSize }
-            )!!
-            imageView.setImageBitmap(bitmap)
+            val bitmap = contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sampleSize })
+            } ?: return null
+            runOnUiThread { imageView.setImageBitmap(bitmap) }
+            val output = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)
-            file = output.toByteArray()
+            output.toByteArray()
         } else {
-            imageView.setImageURI(uri)
-            file = this.contentResolver.openInputStream(uri)!!.readBytes()
+            runOnUiThread { imageView.setImageURI(uri) }
+            contentResolver.openInputStream(uri)?.use { it.readBytes() }
         }
+    } catch (_: Exception) {
+        null
+    }
 
-        val soutu = Soutu(file)
-        val sites = findViewById<GridView>(R.id.sites)
-        val items =
-            listOf("google", "百度", "saucenao", "搜图酱", "yandex", "ascii2d", "animetrace")
+    private fun bindSites(sites: GridView, progressBar: ProgressBar, soutu: Soutu) {
+        val items = listOf("google", "百度", "saucenao", "搜图酱", "yandex", "ascii2d", "animetrace")
         sites.adapter = object : BaseAdapter() {
-            override fun getCount(): Int = 7
+            override fun getCount(): Int = items.size
             override fun getItem(position: Int) = items[position]
             override fun getItemId(position: Int) = position.toLong()
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = if (convertView == null) Button(parent.context) else convertView as Button
+                val view = (convertView as? Button) ?: Button(parent.context)
                 val item = getItem(position)
                 view.text = item
                 view.setOnClickListener {
@@ -72,39 +98,35 @@ class SoutuActivity : Activity() {
                     sites.visibility = View.GONE
                     view.isEnabled = false
                     soutu.upload(item) { data ->
-                        this@SoutuActivity.runOnUiThread {
+                        runOnUiThread {
                             progressBar.visibility = View.GONE
                             sites.visibility = View.VISIBLE
-                            if (data.successful) {
-                                if (data.itemList.isNotEmpty()) {
-                                    startActivity(Intent().apply {
-                                        setClass(this@SoutuActivity, SoutuResultActivity::class.java)
-                                        putExtra("site", item)
-                                        putExtra("url", data.url)
-                                    })
-                                } else if (data.jump) {
-                                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(data.url)))
-                                } else {
-                                    Toast.makeText(
-                                        this@SoutuActivity,
-                                        "没有结果！",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            } else {
-                                Toast.makeText(
-                                    this@SoutuActivity,
-                                    "网络出问题了！",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            view.isEnabled = true
+                            handleResult(item, data)
                         }
                     }
                 }
-
                 return view
             }
         }
         sites.numColumns = 2
+    }
+
+    private fun handleResult(site: String, data: Data) {
+        if (!data.successful) {
+            Toast.makeText(this, "网络出问题了！", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (data.itemList.isNotEmpty()) {
+            startActivity(Intent(this, SoutuResultActivity::class.java).apply {
+                putExtra("site", site)
+                putExtra("url", data.url)
+                putExtra("items", data.itemList.toList().encodeToIntent())
+            })
+        } else if (data.jump) {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(data.url)))
+        } else {
+            Toast.makeText(this, "没有结果！", Toast.LENGTH_SHORT).show()
+        }
     }
 }

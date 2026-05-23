@@ -126,8 +126,7 @@ class SettingsActivity : Activity() {
                     put("packageName", item.packageName)
                     put("activity", item.activity)
                     put("uri", item.uri)
-                    put("extraKey", item.extraKey)
-                    put("extraValue", item.extraValue)
+                    put("extra", item.extra)
                     put("showInAssistant", item.showInAssistant)
                 }
                 jsonArray.put(json)
@@ -171,8 +170,8 @@ class SettingsActivity : Activity() {
                     packageName = json.getString("packageName"),
                     activity = json.getString("activity"),
                     uri = json.getString("uri"),
-                    extraKey = json.getString("extraKey"),
-                    extraValue = json.getString("extraValue"),
+                    extra = if (json.has("extra")) json.getString("extra")
+                    else OpenLink.joinExtra(json.optString("extraKey", ""), json.optString("extraValue", "")),
                     showInAssistant = json.getBoolean("showInAssistant")
                 )
                 openLink.save()

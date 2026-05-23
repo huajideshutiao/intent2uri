@@ -123,7 +123,10 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         root.setBackgroundColor(if (enabled) 0 else 0x80000000.toInt())
         uiDelegate.setUiVisible(!enabled)
         if (!enabled) {
-            overlayContainer.removeAllViews(); selectedTexts.clear()
+            overlayContainer.removeAllViews()
+            selectedTexts.clear()
+            // 释放可能很大的结构数据，下次进入提取模式需要新 onHandleAssist 回调重新拿到
+            assistStructure = null
         }
     }
 

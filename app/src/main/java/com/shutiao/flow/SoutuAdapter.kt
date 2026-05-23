@@ -19,7 +19,9 @@ import java.util.concurrent.Executors
 class SoutuAdapter(private val context: Activity, private val items: List<Item>) : BaseAdapter() {
 
     companion object {
-        private val imageCache = LruCache<String, Bitmap>(20 * 1024 * 1024) // 20MB
+        private val imageCache = object : LruCache<String, Bitmap>(20 * 1024 * 1024) {
+            override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+        }
         private val executor = Executors.newFixedThreadPool(4)
     }
 
@@ -41,7 +43,6 @@ class SoutuAdapter(private val context: Activity, private val items: List<Item>)
             view = LayoutInflater.from(context).inflate(R.layout.item, parent, false)
             view.layoutParams = view.layoutParams.apply {
                 width = ViewGroup.LayoutParams.MATCH_PARENT
-//                height = 700
             }
             holder = ViewHolder(view)
             view.tag = holder

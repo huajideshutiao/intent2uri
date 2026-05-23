@@ -12,11 +12,15 @@ class SoutuResultActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_soutu_result)
         val results = findViewById<ListView>(R.id.imageResults)
-        val items = Soutu.instance?.data?.itemList ?: return
-        results.adapter = SoutuAdapter(this,items)
+        val items = decodeItemsFromIntent(intent.getStringExtra("items"))
+        if (items.isEmpty()) {
+            finish()
+            return
+        }
+        results.adapter = SoutuAdapter(this, items)
         val url = intent.getStringExtra("url")
         findViewById<ImageButton>(R.id.open).setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            if (!url.isNullOrEmpty()) startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         }
     }
 }

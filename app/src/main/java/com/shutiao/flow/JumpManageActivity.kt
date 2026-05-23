@@ -58,8 +58,8 @@ class JumpManageActivity : Activity() {
                         packageName = json.optString("packageName", ""),
                         activity = json.optString("activity", ""),
                         uri = json.optString("uri", ""),
-                        extraKey = json.optString("extraKey", ""),
-                        extraValue = json.optString("extraValue", "")
+                        extra = if (json.has("extra")) json.optString("extra", "")
+                        else OpenLink.joinExtra(json.optString("extraKey", ""), json.optString("extraValue", ""))
                     )
                     openLink.save()
                     Toast.makeText(this, "已导入", Toast.LENGTH_SHORT).show()

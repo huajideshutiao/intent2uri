@@ -25,6 +25,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import org.json.JSONArray
 import org.json.JSONObject
 import rikka.shizuku.Shizuku
 import java.io.OutputStream
@@ -40,13 +41,16 @@ data class OpenLink(
     val packageName: String,
     val activity: String,
     var uri: String,
-    val extraKey: String,
-    var extraValue: String,
+    var extra: String,
     val iconType: String = "app",
     val iconValue: String = "",
     val showInAssistant: Boolean = false
 ) {
     var id: String = ""
+
+    val matchRegex: Regex? by lazy {
+        if (matchRule.isNotEmpty()) runCatching { Regex(matchRule) }.getOrNull() else null
+    }
 
     private val cacheKey: String
         get() = when (iconType) {
@@ -149,8 +153,12 @@ data class OpenLink(
     }
 
     companion object {
-        val memoryCache = LruCache<String, Bitmap>(128)
+        val memoryCache = object : LruCache<String, Bitmap>(8 * 1024 * 1024) {
+            override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+        }
         val iconExecutor = Executors.newFixedThreadPool(4)
+
+        private val dataLock = Any()
 
         private fun loadBitmapAsync(cacheKey: String, imageView: ImageView, loadBitmap: () -> Bitmap) {
             imageView.tag = cacheKey
@@ -183,42 +191,70 @@ data class OpenLink(
         }
 
         private var _datas: MutableList<OpenLink>? = null
-        val datas: MutableList<OpenLink> get() = _datas ?: run { getDatas(); _datas!! }
+        val datas: MutableList<OpenLink>
+            get() = synchronized(dataLock) { _datas ?: run { loadDatas(); _datas!! } }
 
-        fun getDatas() {
-            _datas = App.dbHelper.query("list", null, null, null, null, null, "sort_order ASC").use { cursor ->
+        fun getDatas() = synchronized(dataLock) { loadDatas() }
+
+        private fun loadDatas() {
+            _datas = App.db.query("list", null, null, null, null, null, "sort_order ASC").use { c ->
+                val cId = c.getColumnIndexOrThrow("id")
+                val cName = c.getColumnIndexOrThrow("name")
+                val cDescription = c.getColumnIndexOrThrow("description")
+                val cMatchRule = c.getColumnIndexOrThrow("matchRule")
+                val cReplaceRule = c.getColumnIndexOrThrow("replaceRule")
+                val cPackageName = c.getColumnIndexOrThrow("packageName")
+                val cActivity = c.getColumnIndexOrThrow("activity")
+                val cUri = c.getColumnIndexOrThrow("uri")
+                val cExtra = c.getColumnIndexOrThrow("extra")
+                val cIconType = c.getColumnIndexOrThrow("iconType")
+                val cIconValue = c.getColumnIndexOrThrow("iconValue")
+                val cShowInAssistant = c.getColumnIndexOrThrow("showInAssistant")
                 mutableListOf<OpenLink>().apply {
-                    while (cursor.moveToNext()) {
+                    while (c.moveToNext()) {
                         add(
                             OpenLink(
-                                cursor.getString(1),
-                                cursor.getString(2),
-                                cursor.getString(3),
-                                cursor.getString(4),
-                                cursor.getString(5),
-                                cursor.getString(6),
-                                cursor.getString(7),
-                                cursor.getString(8),
-                                cursor.getString(9),
-                                cursor.getString(11) ?: "app",
-                                cursor.getString(12) ?: "",
-                                cursor.getInt(13) == 1
-                            ).apply { id = cursor.getString(0) })
+                                c.getString(cName),
+                                c.getString(cDescription),
+                                c.getString(cMatchRule),
+                                c.getString(cReplaceRule),
+                                c.getString(cPackageName),
+                                c.getString(cActivity),
+                                c.getString(cUri),
+                                c.getString(cExtra) ?: "",
+                                c.getString(cIconType) ?: "app",
+                                c.getString(cIconValue) ?: "",
+                                c.getInt(cShowInAssistant) == 1
+                            ).apply { id = c.getString(cId) }
+                        )
                     }
                 }
             }
         }
 
+        // 仅供 backup 导入兼容旧格式（旧版本备份分两个字段）。新存储统一用合并后的 extra 列。
+        internal fun joinExtra(rawKey: String?, rawValue: String?): String {
+            if (rawKey.isNullOrEmpty()) return ""
+            val keys = rawKey.split("\n")
+            val values = (rawValue ?: "").split("\n")
+            return keys.mapIndexed { i, k ->
+                val v = values.getOrNull(i) ?: ""
+                if (v.isEmpty()) k else "$k=$v"
+            }.joinToString("\n")
+        }
+
         fun updateOrder() {
-            _datas?.forEachIndexed { index, item ->
-                val values = ContentValues().apply { put("sort_order", index) }
-                App.dbHelper.update("list", values, "id = ?", arrayOf(item.id))
+            synchronized(dataLock) {
+                _datas?.forEachIndexed { index, item ->
+                    val values = ContentValues().apply { put("sort_order", index) }
+                    App.db.update("list", values, "id = ?", arrayOf(item.id))
+                }
             }
         }
 
         fun delete(id: String) {
-            App.dbHelper.delete("list", "id = ?", arrayOf(id))
-            _datas?.removeIf { it.id == id }
+            App.db.delete("list", "id = ?", arrayOf(id))
+            synchronized(dataLock) { _datas?.removeIf { it.id == id } }
         }
 
         fun openExternal(context: Context, intent: Intent) {
@@ -241,7 +277,7 @@ data class OpenLink(
         }
 
         fun smartSearch(context: Context, key: String, item: OpenLink? = null, intent: Intent? = null) {
-            val target = item ?: datas.find { it.matchRule.isNotEmpty() && key.contains(Regex(it.matchRule)) }
+            val target = item ?: datas.find { it.matchRegex?.containsMatchIn(key) == true }
             if (target != null) {
                 target.start(key)
             } else if (intent != null) {
@@ -265,18 +301,20 @@ data class OpenLink(
         val item = ContentValues().apply {
             put("name", name); put("description", description); put("matchRule", matchRule)
             put("replaceRule", replaceRule); put("packageName", packageName); put("activity", activity)
-            put("uri", uri); put("extraKey", extraKey); put("extraValue", extraValue)
+            put("uri", uri); put("extra", extra)
             put("iconType", iconType); put("iconValue", iconValue)
             put("showInAssistant", if (showInAssistant) 1 else 0)
         }
         if (id.isNullOrEmpty()) {
-            App.dbHelper.insert("list", null, item)
+            App.db.insert("list", null, item)
             getDatas()
         } else {
-            App.dbHelper.update("list", item, "id = ?", arrayOf(id))
-            datas.indexOfFirst { it.id == id }.takeIf { it != -1 }?.let {
-                this.id = id
-                datas[it] = this
+            App.db.update("list", item, "id = ?", arrayOf(id))
+            synchronized(dataLock) {
+                datas.indexOfFirst { it.id == id }.takeIf { it != -1 }?.let {
+                    this.id = id
+                    datas[it] = this
+                }
             }
         }
     }
@@ -285,19 +323,29 @@ data class OpenLink(
         val command = if (replaceRule.startsWith("shell:")) {
             replaceRule.substringAfter("shell:").replace("{key}", keyWord)
         } else buildString {
-            val processedKey = if (matchRule.isNotEmpty() && replaceRule.isNotEmpty()) keyWord.replace(
-                Regex(matchRule), replaceRule
-            ) else keyWord
+            val processedKey = matchRegex?.takeIf { replaceRule.isNotEmpty() }
+                ?.replace(keyWord, replaceRule) ?: keyWord
             append("am start -a android.intent.action.VIEW")
             if (packageName.isNotEmpty()) append(" -n $packageName")
             if (activity.isNotEmpty()) append("/$activity")
-            if (uri.isNotEmpty()) append(" -d '${uri.replace("{key}", processedKey)}'")
-            if (extraKey.isNotEmpty()) {
-                val keys = extraKey.split("\n")
-                val values = extraValue.replace("{key}", processedKey).split("\n")
-                keys.indices.forEach { i ->
-                    if (i < values.size) append(" --e").append(keys[i].replaceRange(1, 2, " '")).append("' '")
-                        .append(values[i]).append("'")
+            if (uri.isNotEmpty()) {
+                append(" -d '")
+                append(uri.replace("{key}", processedKey).shellSingleQuote())
+                append("'")
+            }
+            if (extra.isNotEmpty()) {
+                // 每行格式 "s.key=value"：首字符是类型 (s/i/z/...)，'.' 分隔，'=' 之后是值
+                extra.replace("{key}", processedKey).split("\n").forEach { line ->
+                    if (line.length < 2 || line[1] != '.') return@forEach
+                    val eq = line.indexOf('=')
+                    val typeChar = line[0]
+                    val keyEnd = if (eq >= 0) eq else line.length
+                    val keyName = line.substring(2, keyEnd)
+                    if (keyName.isEmpty()) return@forEach
+                    val value = if (eq >= 0) line.substring(eq + 1) else ""
+                    append(" --e").append(typeChar)
+                    append(" '").append(keyName.shellSingleQuote()).append("'")
+                    append(" '").append(value.shellSingleQuote()).append("'")
                 }
             }
             append(" > /dev/null 2>&1\n")
@@ -338,6 +386,33 @@ data class Data(
     var url: String = ""
 )
 
+private fun String.shellSingleQuote(): String = replace("'", "'\\''")
+
+fun List<Item>.encodeToIntent(): String = JSONArray().apply {
+    this@encodeToIntent.forEach { item ->
+        put(JSONObject().apply {
+            put("img", item.img ?: JSONObject.NULL)
+            put("title", item.title)
+            put("description", item.description)
+            put("link", item.link)
+        })
+    }
+}.toString()
+
+fun decodeItemsFromIntent(s: String?): List<Item> {
+    if (s.isNullOrEmpty()) return emptyList()
+    val arr = JSONArray(s)
+    return List(arr.length()) {
+        val o = arr.getJSONObject(it)
+        Item(
+            if (o.isNull("img")) null else o.getString("img"),
+            o.getString("title"),
+            o.getString("description"),
+            o.getString("link"),
+        )
+    }
+}
+
 class Soutu(val file: ByteArray) {
     private val imageUrl by lazy {
         val res = post(
@@ -352,8 +427,7 @@ class Soutu(val file: ByteArray) {
         private set
 
     companion object {
-        var instance: Soutu? = null
-            private set
+        private val executor = Executors.newCachedThreadPool()
     }
 
     private fun post(
@@ -382,7 +456,7 @@ class Soutu(val file: ByteArray) {
 
     fun upload(site: String, callback: (Data) -> Unit) {
         data = Data()
-        Thread {
+        executor.execute {
             when (site) {
                 "saucenao" -> data.url = "https://saucenao.com/search.php?url=$imageUrl"
                 "google" -> data.url = "https://www.google.com/searchbyimage?client=app&image_url=$imageUrl"
@@ -443,9 +517,8 @@ class Soutu(val file: ByteArray) {
                     }
                 }
             }
-            instance = this
             callback(data)
-        }.start()
+        }
     }
 }
 

@@ -62,8 +62,7 @@ class JumpEditActivity : Activity() {
         val uri = findViewById<EditText>(R.id.uri)
         val matchRule = findViewById<EditText>(R.id.matchRule)
         val replaceRule = findViewById<EditText>(R.id.replaceRule)
-        val extraKey = findViewById<EditText>(R.id.extra_key)
-        val extraValue = findViewById<EditText>(R.id.extra_value)
+        val extra = findViewById<EditText>(R.id.extra)
         val cbShowAssistant = findViewById<CheckBox>(R.id.cb_show_assistant)
 
         val iconTypeGroup = findViewById<RadioGroup>(R.id.iconTypeGroup)
@@ -83,7 +82,7 @@ class JumpEditActivity : Activity() {
             
             val tempLink = OpenLink(
                 name.text.toString(), "", "", "",
-                packageName.text.toString(), "", "", "", "",
+                packageName.text.toString(), "", "", "",
                 type, value,
                 cbShowAssistant.isChecked
             )
@@ -133,6 +132,21 @@ class JumpEditActivity : Activity() {
             showAppSelector { pkg -> packageName.setText(pkg) }
         }
 
+        fun buildLink(showAssistant: Boolean = cbShowAssistant.isChecked, iconT: String = getIconType(iconTypeGroup), iconV: String = iconValue.text.toString()) =
+            OpenLink(
+                name.text.toString(),
+                description.text.toString(),
+                matchRule.text.toString(),
+                replaceRule.text.toString(),
+                packageName.text.toString(),
+                activity.text.toString(),
+                uri.text.toString(),
+                extra.text.toString(),
+                iconT,
+                iconV,
+                showAssistant
+            )
+
         // 如果是新建项目，隐藏删除按钮
         if (id.isNullOrEmpty()) {
             delete.visibility = View.GONE
@@ -147,8 +161,7 @@ class JumpEditActivity : Activity() {
                 packageName.setText(this.packageName)
                 activity.setText(this.activity)
                 uri.setText(this.uri)
-                extraKey.setText(this.extraKey)
-                extraValue.setText(this.extraValue)
+                extra.setText(this.extra)
                 cbShowAssistant.isChecked = this.showInAssistant
                 when (this.iconType) {
                     "app" -> findViewById<RadioButton>(R.id.rb_app).isChecked = true
@@ -161,58 +174,17 @@ class JumpEditActivity : Activity() {
         }
 
         cbShowAssistant.setOnCheckedChangeListener { _, isChecked ->
-            if (!id.isNullOrEmpty()) {
-                OpenLink(
-                    name.text.toString(),
-                    description.text.toString(),
-                    matchRule.text.toString(),
-                    replaceRule.text.toString(),
-                    packageName.text.toString(),
-                    activity.text.toString(),
-                    uri.text.toString(),
-                    extraKey.text.toString(),
-                    extraValue.text.toString(),
-                    getIconType(iconTypeGroup),
-                    iconValue.text.toString(),
-                    isChecked
-                ).save(id)
-            }
+            if (!id.isNullOrEmpty()) buildLink(showAssistant = isChecked).save(id)
         }
 
         save.setOnClickListener {
             if (!id.isNullOrEmpty()) {
                 OpenLink.clearIconCache(id)
-                OpenLink(
-                    name.text.toString(),
-                    description.text.toString(),
-                    matchRule.text.toString(),
-                    replaceRule.text.toString(),
-                    packageName.text.toString(),
-                    activity.text.toString(),
-                    uri.text.toString(),
-                    extraKey.text.toString(),
-                    extraValue.text.toString(),
-                    getIconType(iconTypeGroup),
-                    iconValue.text.toString(),
-                    cbShowAssistant.isChecked
-                ).save(id)
+                buildLink().save(id)
                 intent.putExtra("id", id)
                 setResult(RESULT_UPDATED, intent)
             } else {
-                OpenLink(
-                    name.text.toString(),
-                    description.text.toString(),
-                    matchRule.text.toString(),
-                    replaceRule.text.toString(),
-                    packageName.text.toString(),
-                    activity.text.toString(),
-                    uri.text.toString(),
-                    extraKey.text.toString(),
-                    extraValue.text.toString(),
-                    getIconType(iconTypeGroup),
-                    iconValue.text.toString(),
-                    cbShowAssistant.isChecked
-                ).save()
+                buildLink().save()
                 setResult(RESULT_ADDED, intent)
             }
             finish()
@@ -227,8 +199,7 @@ class JumpEditActivity : Activity() {
                 put("packageName", packageName.text.toString())
                 put("activity", activity.text.toString())
                 put("uri", uri.text.toString())
-                put("extraKey", extraKey.text.toString())
-                put("extraValue", extraValue.text.toString())
+                put("extra", extra.text.toString())
             }
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             clipboard.setPrimaryClip(ClipData.newPlainText("backup", json.toString()))
@@ -236,20 +207,7 @@ class JumpEditActivity : Activity() {
         }
 
         start.setOnClickListener {
-            OpenLink(
-                name.text.toString(),
-                description.text.toString(),
-                matchRule.text.toString(),
-                replaceRule.text.toString(),
-                packageName.text.toString(),
-                activity.text.toString(),
-                uri.text.toString(),
-                extraKey.text.toString(),
-                extraValue.text.toString(),
-                "app",
-                "",
-                cbShowAssistant.isChecked
-            ).start("test")
+            buildLink(iconT = "app", iconV = "").start("test")
         }
         delete.setOnClickListener {
             OpenLink.delete(id!!)
@@ -375,7 +333,7 @@ class JumpEditActivity : Activity() {
                 val preview = findViewById<ImageView>(R.id.iconPreview)
                 OpenLink(
                     nameView.text.toString(), "", "", "",
-                    pkgView.text.toString(), "", "", "", "",
+                    pkgView.text.toString(), "", "", "",
                     if (type == R.id.rb_image) "image" else "app", path,
                     findViewById<CheckBox>(R.id.cb_show_assistant).isChecked
                 ).loadIconAsync(this, preview)

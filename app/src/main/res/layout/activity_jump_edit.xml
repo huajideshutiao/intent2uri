@@ -124,16 +124,10 @@
             android:hint="uri" />
 
         <EditText
-            android:id="@+id/extra_key"
+            android:id="@+id/extra"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="extra 键名(一行一个)" />
-
-        <EditText
-            android:id="@+id/extra_value"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="extra 值(一行一个)" />
+            android:hint="extra (一行一条，格式 s.key=value)" />
 
         <CheckBox
             android:id="@+id/cb_show_assistant"

@@ -9,6 +9,7 @@ import android.util.Patterns
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
@@ -35,6 +36,7 @@ class AssistantUiDelegate(
     private val urlBar: TextView = root.findViewById(R.id.url_bar)
     private val sideBar: View = root.findViewById(R.id.side_bar)
     private var currentLink: OpenLink? = null
+    private var globalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
 
     init {
         setupBaseUi()
@@ -55,12 +57,13 @@ class AssistantUiDelegate(
         val maxLines = App.sharedPreferences.getInt("assistant_max_lines", 5)
         input.maxLines = maxLines
 
-        assistantRoot.viewTreeObserver.addOnGlobalLayoutListener {
+        globalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
             val r = Rect().apply { assistantRoot.getWindowVisibleDisplayFrame(this) }
             val screenHeight = assistantRoot.rootView.height
             val keypadHeight = screenHeight - r.bottom
             assistantRoot.translationY = if (keypadHeight > screenHeight * 0.15) -keypadHeight.toFloat() else 0f
         }
+        assistantRoot.viewTreeObserver.addOnGlobalLayoutListener(globalLayoutListener)
 
         root.findViewById<Button>(R.id.btn_expand).setOnClickListener {
             sideBar.visibility = if (sideBar.visibility == View.VISIBLE) View.GONE else View.VISIBLE
@@ -163,6 +166,10 @@ class AssistantUiDelegate(
     fun onPrepareFinish() {
         App.sharedPreferences.edit().putString("last_input", input.text.toString()).apply()
         imm.hideSoftInputFromWindow(input.windowToken, 0)
+        globalLayoutListener?.let {
+            assistantRoot.viewTreeObserver.removeOnGlobalLayoutListener(it)
+            globalLayoutListener = null
+        }
     }
 
     fun setUiVisible(visible: Boolean) {
