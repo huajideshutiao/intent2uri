@@ -338,7 +338,10 @@ data class OpenLink(
                 extra.replace("{key}", processedKey).split("\n").forEach { line ->
                     if (line.length < 2 || line[1] != '.') return@forEach
                     val eq = line.indexOf('=')
-                    val typeChar = line[0]
+                    val typeChar = when (line[0].lowercaseChar()) {
+                        'b' -> 'z'
+                        else -> line[0].lowercaseChar()
+                    }
                     val keyEnd = if (eq >= 0) eq else line.length
                     val keyName = line.substring(2, keyEnd)
                     if (keyName.isEmpty()) return@forEach
