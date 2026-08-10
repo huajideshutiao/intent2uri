@@ -153,7 +153,7 @@ class JumpEditActivity : Activity() {
             findViewById<RadioButton>(R.id.rb_app).isChecked = true
         } else {
             OpenLink.datas.first { it.id == id }.apply {
-                show.text = "你可以通过 kkp://${id}/ 来打开这个快捷方式"
+                show.text = getString(R.string.open_via_kkp, id ?: "")
                 name.setText(this.name)
                 description.setText(this.description)
                 matchRule.setText(this.matchRule)
@@ -203,7 +203,7 @@ class JumpEditActivity : Activity() {
             }
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             clipboard.setPrimaryClip(ClipData.newPlainText("backup", json.toString()))
-            Toast.makeText(this, "规则已导出到剪贴板", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.exported_to_clipboard), Toast.LENGTH_SHORT).show()
         }
 
         start.setOnClickListener {
@@ -219,7 +219,7 @@ class JumpEditActivity : Activity() {
 
     private fun showAppSelector(onSelected: (String) -> Unit) {
         val progressDialog = AlertDialog.Builder(this)
-            .setTitle("正在加载应用列表...")
+            .setTitle(getString(R.string.loading_apps))
             .setView(ProgressBar(this).apply { setPadding(50, 50, 50, 50) })
             .setCancelable(true)
             .show()
@@ -317,7 +317,7 @@ class JumpEditActivity : Activity() {
             type = "image/*"
             addCategory(Intent.CATEGORY_OPENABLE)
         }
-        startActivityForResult(Intent.createChooser(intent, "选择图片"), 2)
+        startActivityForResult(Intent.createChooser(intent, getString(R.string.choose_image)), 2)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

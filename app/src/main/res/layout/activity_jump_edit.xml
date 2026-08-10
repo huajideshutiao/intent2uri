@@ -6,7 +6,7 @@
     android:fillViewport="true"
     android:fitsSystemWindows="true"
     tools:context=".JumpEditActivity"
-    tools:ignore="HardcodedText,Autofill,TextFields">
+    tools:ignore="Autofill,TextFields">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,7 +18,7 @@
             android:id="@+id/name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="名称" />
+            android:hint="@string/name_hint" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -30,7 +30,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="?android:attr/selectableItemBackground"
-                android:contentDescription="图标"
+                android:contentDescription="@string/icon_desc"
                 android:padding="4dp"
                 android:scaleType="fitCenter" />
 
@@ -52,45 +52,45 @@
                     android:id="@+id/rb_app"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="应用" />
+                    android:text="@string/icon_type_app" />
 
                 <RadioButton
                     android:id="@+id/rb_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="文字" />
+                    android:text="@string/icon_type_text" />
 
                 <RadioButton
                     android:id="@+id/rb_image"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="图片" />
+                    android:text="@string/icon_type_image" />
             </RadioGroup>
 
             <Button
                 android:id="@+id/btn_reset_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="重置" />
+                android:text="@string/reset" />
         </LinearLayout>
 
         <EditText
             android:id="@+id/description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="描述" />
+            android:hint="@string/description_hint" />
 
         <EditText
             android:id="@+id/matchRule"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="查找规则" />
+            android:hint="@string/match_rule_hint" />
 
         <EditText
             android:id="@+id/replaceRule"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="替换规则" />
+            android:hint="@string/replace_rule_hint" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -102,20 +102,20 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="包名" />
+                android:hint="@string/package_name_hint" />
 
             <Button
                 android:id="@+id/btn_pick_app"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="选择" />
+                android:text="@string/pick" />
         </LinearLayout>
 
         <EditText
             android:id="@+id/activity"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="活动名" />
+            android:hint="@string/activity_name_hint" />
 
         <EditText
             android:id="@+id/uri"
@@ -127,14 +127,14 @@
             android:id="@+id/extra"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="extra (一行一条，格式 s.key=value)" />
+            android:hint="@string/extra_hint" />
 
         <CheckBox
             android:id="@+id/cb_show_assistant"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="在数字助理底栏显示" />
+            android:text="@string/show_in_assistant" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -147,7 +147,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="启动"
+                android:text="@string/launch"
                 android:visibility="gone" />
 
             <Button
@@ -155,20 +155,20 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="复制" />
+                android:text="@string/copy" />
         </LinearLayout>
 
         <Button
             android:id="@+id/save"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="保存" />
+            android:text="@string/save" />
 
         <Button
             android:id="@+id/delete"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="删除"
+            android:text="@string/delete"
             android:visibility="gone" />
 
         <TextView

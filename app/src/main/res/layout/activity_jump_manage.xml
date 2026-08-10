@@ -5,8 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:context=".JumpManageActivity"
-    tools:ignore="HardcodedText">
+    tools:context=".JumpManageActivity">
 
     <Button
         android:id="@+id/settings"

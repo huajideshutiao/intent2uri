@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Flow</string>
+    <string name="assistant_service_label">Flow</string>
+
+    <!-- Jump edit -->
+    <string name="name_hint">Name</string>
+    <string name="icon_desc">Icon</string>
+    <string name="icon_type_app">App</string>
+    <string name="icon_type_text">Text</string>
+    <string name="icon_type_image">Image</string>
+    <string name="reset">Reset</string>
+    <string name="description_hint">Description</string>
+    <string name="match_rule_hint">Match rule</string>
+    <string name="replace_rule_hint">Replace rule</string>
+    <string name="package_name_hint">Package name</string>
+    <string name="pick">Pick</string>
+    <string name="activity_name_hint">Activity name</string>
+    <string name="extra_hint">extra (one per line, format s.key=value)</string>
+    <string name="show_in_assistant">Show in assistant bar</string>
+    <string name="launch">Launch</string>
+    <string name="copy">Copy</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="open_via_kkp">You can open this shortcut via kkp://%1$s/</string>
+    <string name="exported_to_clipboard">Rule exported to clipboard</string>
+    <string name="loading_apps">Loading app list...</string>
+    <string name="choose_image">Choose image</string>
+
+    <!-- Jump manage -->
+    <string name="import_shortcut">Import shortcut</string>
+    <string name="import_json_prompt">Enter the shortcut JSON string</string>
+    <string name="import_action">Import</string>
+    <string name="cancel">Cancel</string>
+    <string name="imported">Imported</string>
+    <string name="import_failed">Import failed</string>
+
+    <!-- Settings -->
+    <string name="data_management">Data management</string>
+    <string name="backup_config">Backup config</string>
+    <string name="import_config">Import config</string>
+    <string name="browser_settings">Browser settings</string>
+    <string name="select_default_browser">Select default browser</string>
+    <string name="assistant_settings">Assistant settings</string>
+    <string name="set_max_lines">Set max input lines</string>
+    <string name="set_default_assistant">Set default digital assistant</string>
+    <string name="max_lines_title">Max input lines</string>
+    <string name="ok">OK</string>
+    <string name="positive_integer_hint">Please enter an integer greater than 0</string>
+    <string name="saved">Saved</string>
+    <string name="cannot_open_assistant_settings">Cannot open assistant settings: %1$s</string>
+    <string name="backup_success">Backup successful</string>
+    <string name="backup_failed">Backup failed: %1$s</string>
+    <string name="import_success">Import successful</string>
+    <string name="import_failed_with_msg">Import failed: %1$s</string>
+    <string name="cannot_read_file">Cannot read file</string>
+
+    <!-- Assistant -->
+    <string name="done">Done</string>
+    <string name="selected_search_desc">Current search item</string>
+    <string name="search_hint">Search or type...</string>
+    <string name="open_directly">Open directly: %1$s</string>
+
+    <!-- App selector -->
+    <string name="search_app_hint">Search app name or package</string>
+
+    <!-- Soutu -->
+    <string name="image_read_failed">Failed to read image</string>
+    <string name="network_error">Network error!</string>
+    <string name="no_results">No results!</string>
+    <string name="similarity_format">Similarity: %1$s\nSource: %2$s</string>
+    <string name="loading_browsers">Loading browser list...</string>
+    <string name="no_browser_found">No browser found</string>
+    <string name="browser_set">%1$s set as default browser</string>
+</resources>

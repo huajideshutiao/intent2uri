@@ -16,9 +16,8 @@
         android:layout_height="55dp"
         android:layout_gravity="center"
         android:layout_marginEnd="10dp"
-        android:contentDescription="图标"
-        android:scaleType="fitCenter"
-        tools:ignore="HardcodedText" />
+        android:contentDescription="@string/icon_desc"
+        android:scaleType="fitCenter" />
 
     <LinearLayout
         android:id="@+id/text"

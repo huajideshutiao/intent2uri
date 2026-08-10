@@ -52,18 +52,18 @@ class SettingsActivity : Activity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("输入框最大行数")
+            .setTitle(getString(R.string.max_lines_title))
             .setView(editText)
-            .setPositiveButton("确定") { _, _ ->
+            .setPositiveButton(getString(R.string.ok)) { _, _ ->
                 val value = editText.text.toString().toIntOrNull()
                 if (value == null || value <= 0) {
-                    Toast.makeText(this, "请输入大于 0 的整数", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.positive_integer_hint), Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
                 App.sharedPreferences.edit().putInt("assistant_max_lines", value).apply()
-                Toast.makeText(this, "已保存", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.saved), Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("取消", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
@@ -89,7 +89,7 @@ class SettingsActivity : Activity() {
             val intent = Intent(Settings.ACTION_VOICE_INPUT_SETTINGS)
             startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(this, "无法打开助理设置: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.cannot_open_assistant_settings, e.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -143,9 +143,9 @@ class SettingsActivity : Activity() {
                 outputStream.write(backupJson.toString(2).toByteArray())
             }
 
-            Toast.makeText(this, "备份成功", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.backup_success), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "备份失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.backup_failed, e.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -153,7 +153,7 @@ class SettingsActivity : Activity() {
         try {
             val jsonString = contentResolver.openInputStream(uri)?.use { inputStream ->
                 inputStream.bufferedReader().readText()
-            } ?: throw Exception("无法读取文件")
+            } ?: throw Exception(getString(R.string.cannot_read_file))
 
             val backupJson = JSONObject(jsonString)
             val jsonArray = backupJson.getJSONArray("rules")
@@ -189,10 +189,10 @@ class SettingsActivity : Activity() {
                     .apply()
             }
 
-            Toast.makeText(this, "导入成功", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.import_success), Toast.LENGTH_SHORT).show()
             setResult(RESULT_OK)
         } catch (e: Exception) {
-            Toast.makeText(this, "导入失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.import_failed_with_msg, e.message), Toast.LENGTH_SHORT).show()
         }
     }
 }

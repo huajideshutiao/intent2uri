@@ -44,7 +44,7 @@ class SoutuActivity : Activity() {
         executor.execute {
             val file = prepareImage(uri, imageView) ?: run {
                 runOnUiThread {
-                    Toast.makeText(this, "图片读取失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.image_read_failed), Toast.LENGTH_SHORT).show()
                     finish()
                 }
                 return@execute
@@ -52,7 +52,7 @@ class SoutuActivity : Activity() {
             runOnUiThread {
                 progressBar.visibility = View.GONE
                 sites.visibility = View.VISIBLE
-                bindSites(sites, progressBar, Soutu(file))
+                bindSites(sites, progressBar, Soutu(file, this))
             }
         }
     }
@@ -114,7 +114,7 @@ class SoutuActivity : Activity() {
 
     private fun handleResult(site: String, data: Data) {
         if (!data.successful) {
-            Toast.makeText(this, "网络出问题了！", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.network_error), Toast.LENGTH_SHORT).show()
             return
         }
         if (data.itemList.isNotEmpty()) {
@@ -126,7 +126,7 @@ class SoutuActivity : Activity() {
         } else if (data.jump) {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(data.url)))
         } else {
-            Toast.makeText(this, "没有结果！", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.no_results), Toast.LENGTH_SHORT).show()
         }
     }
 }

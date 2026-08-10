@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">流转</string>
+    <string name="assistant_service_label">流转</string>
+
+    <!-- Jump edit -->
+    <string name="name_hint">名称</string>
+    <string name="icon_desc">图标</string>
+    <string name="icon_type_app">应用</string>
+    <string name="icon_type_text">文字</string>
+    <string name="icon_type_image">图片</string>
+    <string name="reset">重置</string>
+    <string name="description_hint">描述</string>
+    <string name="match_rule_hint">查找规则</string>
+    <string name="replace_rule_hint">替换规则</string>
+    <string name="package_name_hint">包名</string>
+    <string name="pick">选择</string>
+    <string name="activity_name_hint">活动名</string>
+    <string name="extra_hint">extra (一行一条，格式 s.key=value)</string>
+    <string name="show_in_assistant">在数字助理底栏显示</string>
+    <string name="launch">启动</string>
+    <string name="copy">复制</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="open_via_kkp">你可以通过 kkp://%1$s/ 来打开这个快捷方式</string>
+    <string name="exported_to_clipboard">规则已导出到剪贴板</string>
+    <string name="loading_apps">正在加载应用列表...</string>
+    <string name="choose_image">选择图片</string>
+
+    <!-- Jump manage -->
+    <string name="import_shortcut">导入快捷方式</string>
+    <string name="import_json_prompt">请输入快捷方式的JSON字符串</string>
+    <string name="import_action">导入</string>
+    <string name="cancel">取消</string>
+    <string name="imported">已导入</string>
+    <string name="import_failed">导入失败</string>
+
+    <!-- Settings -->
+    <string name="data_management">数据管理</string>
+    <string name="backup_config">备份配置</string>
+    <string name="import_config">导入配置</string>
+    <string name="browser_settings">浏览器设置</string>
+    <string name="select_default_browser">选择默认浏览器</string>
+    <string name="assistant_settings">助理设置</string>
+    <string name="set_max_lines">设置输入框最大行数</string>
+    <string name="set_default_assistant">设置默认数字助理</string>
+    <string name="max_lines_title">输入框最大行数</string>
+    <string name="ok">确定</string>
+    <string name="positive_integer_hint">请输入大于 0 的整数</string>
+    <string name="saved">已保存</string>
+    <string name="cannot_open_assistant_settings">无法打开助理设置: %1$s</string>
+    <string name="backup_success">备份成功</string>
+    <string name="backup_failed">备份失败: %1$s</string>
+    <string name="import_success">导入成功</string>
+    <string name="import_failed_with_msg">导入失败: %1$s</string>
+    <string name="cannot_read_file">无法读取文件</string>
+
+    <!-- Assistant -->
+    <string name="done">完成</string>
+    <string name="selected_search_desc">当前搜索项</string>
+    <string name="search_hint">搜索或输入...</string>
+    <string name="open_directly">直接打开: %1$s</string>
+
+    <!-- App selector -->
+    <string name="search_app_hint">搜索应用名称或包名</string>
+
+    <!-- Soutu -->
+    <string name="image_read_failed">图片读取失败</string>
+    <string name="network_error">网络出问题了！</string>
+    <string name="no_results">没有结果！</string>
+    <string name="similarity_format">相似度：%1$s\n来源：%2$s</string>
+    <string name="loading_browsers">正在加载浏览器列表...</string>
+    <string name="no_browser_found">未找到浏览器</string>
+    <string name="browser_set">已设置%1$s为默认浏览器</string>
+</resources>

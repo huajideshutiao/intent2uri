@@ -43,11 +43,11 @@ class JumpManageActivity : Activity() {
         }
         addButton.setOnLongClickListener {
             val dialog = AlertDialog.Builder(this)
-            dialog.setTitle("导入快捷方式")
-            dialog.setMessage("请输入快捷方式的JSON字符串")
+            dialog.setTitle(getString(R.string.import_shortcut))
+            dialog.setMessage(getString(R.string.import_json_prompt))
             val input = EditText(this)
             dialog.setView(input)
-            dialog.setPositiveButton("导入") { _, _ ->
+            dialog.setPositiveButton(getString(R.string.import_action)) { _, _ ->
                 try {
                     val json = org.json.JSONObject(input.text.toString())
                     val openLink = OpenLink(
@@ -62,13 +62,13 @@ class JumpManageActivity : Activity() {
                         else OpenLink.joinExtra(json.optString("extraKey", ""), json.optString("extraValue", ""))
                     )
                     openLink.save()
-                    Toast.makeText(this, "已导入", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.imported), Toast.LENGTH_SHORT).show()
                     refreshList()
                 } catch (_: Exception) {
-                    Toast.makeText(this, "导入失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.import_failed), Toast.LENGTH_SHORT).show()
                 }
             }
-            dialog.setNegativeButton("取消") { _, _ -> }
+            dialog.setNegativeButton(getString(R.string.cancel)) { _, _ -> }
             dialog.show()
             true
         }

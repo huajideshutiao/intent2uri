@@ -416,7 +416,7 @@ fun decodeItemsFromIntent(s: String?): List<Item> {
     }
 }
 
-class Soutu(val file: ByteArray) {
+class Soutu(val file: ByteArray, private val context: Context) {
     private val imageUrl by lazy {
         val res = post(
             "https://yandex.com/images-apphost/image-download?cbird=117&images_avatars_size=preview&images_avatars_namespace=images-cbir",
@@ -509,7 +509,7 @@ class Soutu(val file: ByteArray) {
                             Item(
                                 item.getString("previewImageUrl"),
                                 item.getString("title"),
-                                "相似度：${item.get("similarity")}\n来源：${item.getString("source")}",
+                                context.getString(R.string.similarity_format, item.get("similarity"), item.getString("source")),
                                 when (item.getString("source")) {
                                     "nhentai" -> "https://nhentai.net${item.getString("subjectPath")}"
                                     "ehentai" -> "https://exhentai.org${item.getString("subjectPath")}"
@@ -527,7 +527,7 @@ class Soutu(val file: ByteArray) {
 
 fun showBrowserSelector(context: Context, onCancel: (() -> Unit)? = null) {
     val progressDialog = AlertDialog.Builder(context)
-        .setTitle("正在加载浏览器列表...")
+        .setTitle(context.getString(R.string.loading_browsers))
         .setView(android.widget.ProgressBar(context).apply { setPadding(50, 50, 50, 50) })
         .setCancelable(onCancel != null)
         .apply { onCancel?.let { setOnCancelListener { it() } } }
@@ -542,7 +542,7 @@ fun showBrowserSelector(context: Context, onCancel: (() -> Unit)? = null) {
         (context as? Activity)?.runOnUiThread {
             progressDialog.dismiss()
             if (browserList.isEmpty()) {
-                Toast.makeText(context, "未找到浏览器", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.no_browser_found), Toast.LENGTH_SHORT).show()
                 return@runOnUiThread
             }
 
@@ -553,7 +553,7 @@ fun showBrowserSelector(context: Context, onCancel: (() -> Unit)? = null) {
             }
 
             val dialog = AlertDialog.Builder(context)
-                .setTitle("选择默认浏览器")
+                .setTitle(context.getString(R.string.select_default_browser))
                 .setCancelable(onCancel == null)
                 .setView(layout)
                 .create()
@@ -566,7 +566,7 @@ fun showBrowserSelector(context: Context, onCancel: (() -> Unit)? = null) {
                     layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     setOnClickListener {
                         App.sharedPreferences.edit().putString("browser", browser.activityInfo.packageName).apply()
-                        Toast.makeText(context, "已设置${browser.loadLabel(pm)}为默认浏览器", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.browser_set, browser.loadLabel(pm)), Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
                     }
                 }

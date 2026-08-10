@@ -6,14 +6,13 @@
     android:layout_marginLeft="8dp"
     android:layout_marginRight="8dp"
     android:fitsSystemWindows="true"
-    android:orientation="vertical"
-    tools:ignore="HardcodedText">
+    android:orientation="vertical">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="数据管理"
+        android:text="@string/data_management"
         android:textSize="18sp"
         android:textStyle="bold" />
 
@@ -22,20 +21,20 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:text="备份配置" />
+        android:text="@string/backup_config" />
 
     <Button
         android:id="@+id/btn_import"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="导入配置" />
+        android:text="@string/import_config" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="浏览器设置"
+        android:text="@string/browser_settings"
         android:textSize="18sp"
         android:textStyle="bold" />
 
@@ -44,13 +43,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="选择默认浏览器" />
+        android:text="@string/select_default_browser" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="助理设置"
+        android:text="@string/assistant_settings"
         android:textSize="18sp"
         android:textStyle="bold" />
 
@@ -59,12 +58,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:text="设置输入框最大行数" />
+        android:text="@string/set_max_lines" />
 
     <Button
         android:id="@+id/btn_set_default_assistant"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="设置默认数字助理" />
+        android:text="@string/set_default_assistant" />
 
 </LinearLayout>

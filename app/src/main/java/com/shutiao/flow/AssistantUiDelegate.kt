@@ -115,7 +115,7 @@ class AssistantUiDelegate(
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val t = s?.toString() ?: ""
                 urlBar.visibility = if (Patterns.WEB_URL.matcher(t).matches()) {
-                    urlBar.text = "直接打开: $t"; View.VISIBLE
+                    urlBar.text = context.getString(R.string.open_directly, t); View.VISIBLE
                 } else View.GONE
             }
 
