@@ -30,8 +30,8 @@ configure<ApplicationExtension> {
         minSdk = 24
         //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 2
-        versionName = "3.1"
+        versionCode = 3
+        versionName = "3.2"
     }
     
     buildFeatures {

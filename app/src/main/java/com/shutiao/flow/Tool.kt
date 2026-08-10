@@ -16,13 +16,16 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.net.Uri
 import android.os.IBinder
+import android.text.TextUtils
 import android.util.Base64
 import android.util.LruCache
 import android.util.Patterns
 import android.view.Gravity
 import android.view.ViewGroup
+import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import org.json.JSONArray
@@ -546,24 +549,31 @@ fun showBrowserSelector(context: Context, onCancel: (() -> Unit)? = null) {
                 return@runOnUiThread
             }
 
-            val layout = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
+            val density = context.resources.displayMetrics.density
+            val iconSize = (64 * density).toInt()
+
+            val layout = GridLayout(context).apply {
+                columnCount = 4
+                useDefaultMargins = true
                 setPadding(16, 16, 16, 16)
-                gravity = Gravity.CENTER
             }
 
             val dialog = AlertDialog.Builder(context)
                 .setTitle(context.getString(R.string.select_default_browser))
                 .setCancelable(onCancel == null)
-                .setView(layout)
+                .setView(ScrollView(context).apply { addView(layout) })
                 .create()
 
             browserList.forEach { browser ->
                 val item = LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER
-                    setPadding(16, 16, 16, 16)
-                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    setPadding(8, 8, 8, 8)
+                    layoutParams = GridLayout.LayoutParams().apply {
+                        width = 0
+                        height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                    }
                     setOnClickListener {
                         App.sharedPreferences.edit().putString("browser", browser.activityInfo.packageName).apply()
                         Toast.makeText(context, context.getString(R.string.browser_set, browser.loadLabel(pm)), Toast.LENGTH_SHORT).show()
@@ -572,13 +582,15 @@ fun showBrowserSelector(context: Context, onCancel: (() -> Unit)? = null) {
                 }
                 item.addView(ImageView(context).apply {
                     scaleType = ImageView.ScaleType.FIT_CENTER
-                    layoutParams = ViewGroup.LayoutParams(120, 120)
+                    layoutParams = ViewGroup.LayoutParams(iconSize, iconSize)
                     setImageDrawable(browser.loadIcon(pm))
                 })
                 item.addView(TextView(context).apply {
                     text = browser.loadLabel(pm)
                     gravity = Gravity.CENTER
                     setPadding(0, 8, 0, 0)
+                    maxLines = 1
+                    ellipsize = TextUtils.TruncateAt.END
                 })
                 layout.addView(item)
             }
