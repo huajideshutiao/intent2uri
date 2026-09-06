@@ -3,4 +3,12 @@
         <item name="android:statusBarColor">@android:color/black</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <!-- 与 values/styles.xml 的同名样式对称，仅换深色 parent；平台无 DayNight.NoActionBar 可继承 -->
+    <style name="Theme.Translucent" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

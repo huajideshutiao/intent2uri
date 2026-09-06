@@ -2,6 +2,7 @@ package com.shutiao.flow
 
 import android.app.Application
 import android.content.ComponentName
+import android.content.ContentValues
 import android.content.SharedPreferences
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -69,8 +70,19 @@ class App : Application() {
 }
 
 class DbHelper(context: App) : SQLiteOpenHelper(context, "list.db", null, 6) {
+    private companion object {
+        // 建表列清单只此一份，onCreate 与 v6 迁移重建表共用
+        const val COLUMNS =
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,description TEXT,matchRule TEXT," +
+                "replaceRule TEXT,packageName TEXT,activity TEXT,uri TEXT,extra TEXT," +
+                "sort_order INTEGER DEFAULT 0,iconType TEXT,iconValue TEXT,showInAssistant INTEGER DEFAULT 0"
+        const val COPY_COLUMNS =
+            "id,name,description,matchRule,replaceRule,packageName,activity,uri,extra," +
+                "sort_order,iconType,iconValue,showInAssistant"
+    }
+
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE list (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,description TEXT,matchRule TEXT,replaceRule TEXT,packageName TEXT,activity TEXT,uri TEXT,extra TEXT,sort_order INTEGER DEFAULT 0,iconType TEXT,iconValue TEXT,showInAssistant INTEGER DEFAULT 0)")
+        db.execSQL("CREATE TABLE list ($COLUMNS)")
     }
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 3) {
@@ -92,12 +104,12 @@ class DbHelper(context: App) : SQLiteOpenHelper(context, "list.db", null, 6) {
                 val cV = c.getColumnIndexOrThrow("extraValue")
                 while (c.moveToNext()) {
                     val joined = OpenLink.joinExtra(c.getString(cK), c.getString(cV))
-                    val cv = android.content.ContentValues().apply { put("extra", joined) }
+                    val cv = ContentValues().apply { put("extra", joined) }
                     db.update("list", cv, "id = ?", arrayOf(c.getString(cId)))
                 }
             }
-            db.execSQL("CREATE TABLE list_new (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,description TEXT,matchRule TEXT,replaceRule TEXT,packageName TEXT,activity TEXT,uri TEXT,extra TEXT,sort_order INTEGER DEFAULT 0,iconType TEXT,iconValue TEXT,showInAssistant INTEGER DEFAULT 0)")
-            db.execSQL("INSERT INTO list_new (id,name,description,matchRule,replaceRule,packageName,activity,uri,extra,sort_order,iconType,iconValue,showInAssistant) SELECT id,name,description,matchRule,replaceRule,packageName,activity,uri,extra,sort_order,iconType,iconValue,showInAssistant FROM list")
+            db.execSQL("CREATE TABLE list_new ($COLUMNS)")
+            db.execSQL("INSERT INTO list_new ($COPY_COLUMNS) SELECT $COPY_COLUMNS FROM list")
             db.execSQL("DROP TABLE list")
             db.execSQL("ALTER TABLE list_new RENAME TO list")
         }

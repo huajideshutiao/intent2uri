@@ -4,8 +4,7 @@ import kotlin.system.exitProcess
 
 class UserService : IUserService.Stub() {
 
-    override fun destroy() = exit()
-    override fun exit() = exitProcess(0)
+    override fun destroy() = exitProcess(0)
 
     override fun exec(command: String) {
         // 异步执行：binder 调用立刻返回，子进程的输出被消费避免缓冲区填满导致僵尸进程
