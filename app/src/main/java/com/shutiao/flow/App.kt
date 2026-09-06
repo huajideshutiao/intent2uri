@@ -66,6 +66,7 @@ class App : Application() {
         super.onCreate()
         db = DbHelper(this).writableDatabase
         sharedPreferences = getSharedPreferences("list", MODE_PRIVATE)
+        AssistantHealer.checkAndRepair(this)
     }
 }
 

@@ -50,6 +50,9 @@
     <string name="positive_integer_hint">请输入大于 0 的整数</string>
     <string name="saved">已保存</string>
     <string name="cannot_open_assistant_settings">无法打开助理设置: %1$s</string>
+    <string name="assistant_auto_repaired">已自动修复默认数字助理</string>
+    <string name="assistant_auto_repair_failed">自动修复失败，请手动选择数字助理</string>
+    <string name="assistant_already_default">已经是默认数字助理</string>
     <string name="backup_success">备份成功</string>
     <string name="backup_failed">备份失败: %1$s</string>
     <string name="import_success">导入成功</string>

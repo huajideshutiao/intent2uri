@@ -50,6 +50,9 @@
     <string name="positive_integer_hint">Please enter an integer greater than 0</string>
     <string name="saved">Saved</string>
     <string name="cannot_open_assistant_settings">Cannot open assistant settings: %1$s</string>
+    <string name="assistant_auto_repaired">Default assistant repaired automatically</string>
+    <string name="assistant_auto_repair_failed">Auto repair failed, please select the assistant manually</string>
+    <string name="assistant_already_default">Already the default digital assistant</string>
     <string name="backup_success">Backup successful</string>
     <string name="backup_failed">Backup failed: %1$s</string>
     <string name="import_success">Import successful</string>

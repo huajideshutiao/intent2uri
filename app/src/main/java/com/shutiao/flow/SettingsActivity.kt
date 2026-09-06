@@ -85,6 +85,26 @@ class SettingsActivity : Activity() {
     }
 
     private fun openDefaultAssistantSettings() {
+        if (AssistantHealer.isHalfBroken(this)) {
+            // 半坏：role 已在手，系统页面里重选前它也不会变，先尝试静默自愈
+            AssistantHealer.repairAndVerify(applicationContext) { repaired ->
+                if (repaired) {
+                    Toast.makeText(applicationContext, R.string.assistant_auto_repaired, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(applicationContext, R.string.assistant_auto_repair_failed, Toast.LENGTH_SHORT).show()
+                    openAssistantSettingsPage()
+                }
+            }
+            return
+        }
+        if (AssistantHealer.isDefaultAssistant(this)) {
+            Toast.makeText(this, R.string.assistant_already_default, Toast.LENGTH_SHORT).show()
+            return
+        }
+        openAssistantSettingsPage()
+    }
+
+    private fun openAssistantSettingsPage() {
         try {
             val intent = Intent(Settings.ACTION_VOICE_INPUT_SETTINGS)
             startActivity(intent)
