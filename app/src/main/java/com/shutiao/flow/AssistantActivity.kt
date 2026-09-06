@@ -52,6 +52,7 @@ class AssistantActivity : Activity() {
     }
 
     override fun onDestroy() {
+        uiDelegate.release()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
             backCallback = null

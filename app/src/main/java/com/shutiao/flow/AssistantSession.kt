@@ -132,8 +132,8 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
 
     private fun setViewSelected(v: View, sel: Boolean, txt: String) {
         if (v.isSelected == sel) return
+        // text_rect_bg 是 state_selected selector，背景随 isSelected 自动切换
         v.isSelected = sel
-        v.setBackgroundResource(if (sel) R.drawable.text_rect_bg_selected else R.drawable.text_rect_bg)
         if (sel) selectedTexts += txt else selectedTexts -= txt
     }
 
@@ -165,5 +165,10 @@ class AssistantSession(context: Context) : VoiceInteractionSession(context) {
         } else {
             safeFinish()
         }
+    }
+
+    override fun onDestroy() {
+        uiDelegate.release()
+        super.onDestroy()
     }
 }

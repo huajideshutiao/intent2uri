@@ -3,8 +3,6 @@ package com.shutiao.flow
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Patterns
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -36,7 +34,23 @@ class AssistantUiDelegate(
     private val urlBar: TextView = root.findViewById(R.id.url_bar)
     private val sideBar: View = root.findViewById(R.id.side_bar)
     private var currentLink: OpenLink? = null
-    private var globalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+
+    private val keyboardLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
+        val r = Rect().apply { assistantRoot.getWindowVisibleDisplayFrame(this) }
+        val screenHeight = assistantRoot.rootView.height
+        val keypadHeight = screenHeight - r.bottom
+        assistantRoot.translationY = if (keypadHeight > screenHeight * 0.15) -keypadHeight.toFloat() else 0f
+    }
+
+    /** 窗口拿到焦点后才能弹输入法，所以先记下诉求，由焦点回调兑现 */
+    private var awaitingWindowFocus = false
+    private val windowFocusListener = ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
+        if (hasFocus && awaitingWindowFocus) {
+            awaitingWindowFocus = false
+            input.requestFocus()
+            imm.showSoftInput(input, 0)
+        }
+    }
 
     init {
         setupBaseUi()
@@ -54,16 +68,10 @@ class AssistantUiDelegate(
             btnExtract.visibility = View.GONE
         }
 
-        val maxLines = App.sharedPreferences.getInt("assistant_max_lines", 5)
-        input.maxLines = maxLines
+        input.maxLines = App.sharedPreferences.getInt("assistant_max_lines", 5)
 
-        globalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
-            val r = Rect().apply { assistantRoot.getWindowVisibleDisplayFrame(this) }
-            val screenHeight = assistantRoot.rootView.height
-            val keypadHeight = screenHeight - r.bottom
-            assistantRoot.translationY = if (keypadHeight > screenHeight * 0.15) -keypadHeight.toFloat() else 0f
-        }
-        assistantRoot.viewTreeObserver.addOnGlobalLayoutListener(globalLayoutListener)
+        assistantRoot.viewTreeObserver.addOnGlobalLayoutListener(keyboardLayoutListener)
+        assistantRoot.viewTreeObserver.addOnWindowFocusChangeListener(windowFocusListener)
 
         root.findViewById<Button>(R.id.btn_expand).setOnClickListener {
             sideBar.visibility = if (sideBar.visibility == View.VISIBLE) View.GONE else View.VISIBLE
@@ -110,17 +118,11 @@ class AssistantUiDelegate(
 
         urlBar.setOnClickListener { performSearch(input.text.toString(), null) }
 
-        input.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val t = s?.toString() ?: ""
-                urlBar.visibility = if (Patterns.WEB_URL.matcher(t).matches()) {
-                    urlBar.text = context.getString(R.string.open_directly, t); View.VISIBLE
-                } else View.GONE
-            }
-
-            override fun afterTextChanged(s: Editable?) {}
-        })
+        input.onTextChanged { text ->
+            urlBar.visibility = if (Patterns.WEB_URL.matcher(text).matches()) {
+                urlBar.text = context.getString(R.string.open_directly, text); View.VISIBLE
+            } else View.GONE
+        }
     }
 
     private fun setupIconRow(row: LinearLayout) {
@@ -153,34 +155,36 @@ class AssistantUiDelegate(
         }
     }
 
-    fun onShow(text: String?) {
-        val finalGenText = text ?: App.sharedPreferences.getString("last_input", "") ?: ""
-        input.setText(finalGenText)
-        if (finalGenText.isNotEmpty()) {
-            input.selectAll()
-        }
+    private fun focusAndShowKeyboard() {
+        if (input.text.isNotEmpty()) input.selectAll()
         input.requestFocus()
-        input.postDelayed({ imm.showSoftInput(input, 0) }, 100)
+        // 窗口未获焦时 showSoftInput 会被 IMM 以 "view is not served" 丢弃，改等焦点回调再弹
+        if (root.hasWindowFocus()) imm.showSoftInput(input, 0) else awaitingWindowFocus = true
     }
 
+    fun onShow(text: String?) {
+        input.setText(text ?: App.sharedPreferences.getString("last_input", "") ?: "")
+        focusAndShowKeyboard()
+    }
+
+    /** 收起输入法并留存草稿；面板可能稍后再次显示，故不在此注销布局监听 */
     fun onPrepareFinish() {
         App.sharedPreferences.edit().putString("last_input", input.text.toString()).apply()
+        awaitingWindowFocus = false
         imm.hideSoftInputFromWindow(input.windowToken, 0)
-        globalLayoutListener?.let {
-            assistantRoot.viewTreeObserver.removeOnGlobalLayoutListener(it)
-            globalLayoutListener = null
-        }
+    }
+
+    /** 面板彻底销毁时注销监听 */
+    fun release() {
+        assistantRoot.viewTreeObserver.removeOnGlobalLayoutListener(keyboardLayoutListener)
+        assistantRoot.viewTreeObserver.removeOnWindowFocusChangeListener(windowFocusListener)
     }
 
     fun setUiVisible(visible: Boolean) {
         assistantRoot.visibility = if (visible) View.VISIBLE else View.GONE
         if (visible) {
             sideBar.visibility = View.GONE
-            if (input.text.isNotEmpty()) {
-                input.selectAll()
-            }
-            input.requestFocus()
-            input.postDelayed({ imm.showSoftInput(input, 0) }, 100)
+            focusAndShowKeyboard()
         }
     }
 }
