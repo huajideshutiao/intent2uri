@@ -14,10 +14,16 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = keystoreProperties["signing.storeFile"]?.let { file(it as String) }
-            storePassword = keystoreProperties["signing.storePassword"] as String?
-            keyAlias = keystoreProperties["signing.keyAlias"] as String?
-            keyPassword = keystoreProperties["signing.keyPassword"] as String?
+            // CI 通过环境变量注入签名（SIGNING_STORE_FILE 为 workflow 解码出的 keystore 路径），
+            // 本地开发仍读取 local.properties
+            storeFile = System.getenv("SIGNING_STORE_FILE")?.let { file(it) }
+                ?: keystoreProperties["signing.storeFile"]?.let { file(it as String) }
+            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                ?: keystoreProperties["signing.storePassword"] as String?
+            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                ?: keystoreProperties["signing.keyAlias"] as String?
+            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+                ?: keystoreProperties["signing.keyPassword"] as String?
         }
     }
     namespace = "com.shutiao.flow"
