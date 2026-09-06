@@ -6,13 +6,11 @@ import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,7 +25,8 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
-import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
 
 class JumpEditActivity : Activity() {
 
@@ -35,13 +34,30 @@ class JumpEditActivity : Activity() {
         const val RESULT_UPDATED = 1
         const val RESULT_DELETED = 2
         const val RESULT_ADDED = 3
+        private const val REQUEST_PICK_IMAGE = 2
     }
 
-    private fun getIconType(group: RadioGroup): String = when (group.checkedRadioButtonId) {
-        R.id.rb_text -> "text"
-        R.id.rb_image -> "image"
-        else -> "app"
-    }
+    private lateinit var name: EditText
+    private lateinit var description: EditText
+    private lateinit var packageName: EditText
+    private lateinit var activityName: EditText
+    private lateinit var uri: EditText
+    private lateinit var matchRule: EditText
+    private lateinit var replaceRule: EditText
+    private lateinit var extra: EditText
+    private lateinit var cbShowAssistant: CheckBox
+    private lateinit var iconTypeGroup: RadioGroup
+    private lateinit var iconPreview: ImageView
+
+    /** 图标取值（包名 / 首字符 / 本地图片路径），随图标类型切换而清空 */
+    private var iconValue: String = ""
+
+    private val iconType: String
+        get() = when (iconTypeGroup.checkedRadioButtonId) {
+            R.id.rb_text -> "text"
+            R.id.rb_image -> "image"
+            else -> "app"
+        }
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,45 +68,21 @@ class JumpEditActivity : Activity() {
         val delete = findViewById<Button>(R.id.delete)
         val copy = findViewById<Button>(R.id.copy)
         val show = findViewById<TextView>(R.id.show)
-        delete.visibility = View.VISIBLE
-        start.visibility = View.VISIBLE
 
-        val name = findViewById<EditText>(R.id.name)
-        val description = findViewById<EditText>(R.id.description)
-        val packageName = findViewById<EditText>(R.id.packageName)
-        val activity = findViewById<EditText>(R.id.activity)
-        val uri = findViewById<EditText>(R.id.uri)
-        val matchRule = findViewById<EditText>(R.id.matchRule)
-        val replaceRule = findViewById<EditText>(R.id.replaceRule)
-        val extra = findViewById<EditText>(R.id.extra)
-        val cbShowAssistant = findViewById<CheckBox>(R.id.cb_show_assistant)
+        name = findViewById(R.id.name)
+        description = findViewById(R.id.description)
+        packageName = findViewById(R.id.packageName)
+        activityName = findViewById(R.id.activity)
+        uri = findViewById(R.id.uri)
+        matchRule = findViewById(R.id.matchRule)
+        replaceRule = findViewById(R.id.replaceRule)
+        extra = findViewById(R.id.extra)
+        cbShowAssistant = findViewById(R.id.cb_show_assistant)
+        iconTypeGroup = findViewById(R.id.iconTypeGroup)
+        iconPreview = findViewById(R.id.iconPreview)
 
-        val iconTypeGroup = findViewById<RadioGroup>(R.id.iconTypeGroup)
-        val iconValue = findViewById<TextView>(R.id.iconValue)
-        val iconPreview = findViewById<ImageView>(R.id.iconPreview)
-        val btnPickApp = findViewById<Button>(R.id.btn_pick_app)
-        val btnResetIcon = findViewById<Button>(R.id.btn_reset_icon)
-
-        fun refreshPreview() {
-            val type = getIconType(iconTypeGroup)
-            val value = iconValue.text.toString()
-
-            if (type == "image" && value.isEmpty()) {
-                iconPreview.setImageResource(android.R.drawable.ic_menu_gallery)
-                return
-            }
-            
-            val tempLink = OpenLink(
-                name.text.toString(), "", "", "",
-                packageName.text.toString(), "", "", "",
-                type, value,
-                cbShowAssistant.isChecked
-            )
-            tempLink.loadIconAsync(this, iconPreview)
-        }
-
-        btnResetIcon.setOnClickListener {
-            iconValue.text = ""
+        findViewById<Button>(R.id.btn_reset_icon).setOnClickListener {
+            iconValue = ""
             iconTypeGroup.check(R.id.rb_app)
             refreshPreview()
         }
@@ -98,77 +90,57 @@ class JumpEditActivity : Activity() {
         iconPreview.setOnClickListener {
             when (iconTypeGroup.checkedRadioButtonId) {
                 R.id.rb_app -> showAppSelector { pkg ->
-                    iconValue.text = pkg
+                    iconValue = pkg
                     refreshPreview()
                 }
 
                 R.id.rb_image -> pickImage()
                 R.id.rb_text -> {
-                    iconValue.text = ""
+                    iconValue = ""
                     refreshPreview()
                 }
             }
         }
 
         iconTypeGroup.setOnCheckedChangeListener { _, _ ->
-            iconValue.text = ""
+            iconValue = ""
             refreshPreview()
         }
 
-        name.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                if (iconTypeGroup.checkedRadioButtonId == R.id.rb_text) {
-                    refreshPreview()
-                }
-            }
-
-            override fun afterTextChanged(s: Editable?) {}
-        })
+        name.onTextChanged {
+            if (iconTypeGroup.checkedRadioButtonId == R.id.rb_text) refreshPreview()
+        }
 
         val id = intent.extras?.getString("id", "")
 
-        btnPickApp.setOnClickListener {
+        findViewById<Button>(R.id.btn_pick_app).setOnClickListener {
             showAppSelector { pkg -> packageName.setText(pkg) }
         }
 
-        fun buildLink(showAssistant: Boolean = cbShowAssistant.isChecked, iconT: String = getIconType(iconTypeGroup), iconV: String = iconValue.text.toString()) =
-            OpenLink(
-                name.text.toString(),
-                description.text.toString(),
-                matchRule.text.toString(),
-                replaceRule.text.toString(),
-                packageName.text.toString(),
-                activity.text.toString(),
-                uri.text.toString(),
-                extra.text.toString(),
-                iconT,
-                iconV,
-                showAssistant
-            )
-
-        // 如果是新建项目，隐藏删除按钮
+        // 新建时无可删除对象，删除按钮沿用 XML 的 gone
         if (id.isNullOrEmpty()) {
-            delete.visibility = View.GONE
             findViewById<RadioButton>(R.id.rb_app).isChecked = true
         } else {
-            OpenLink.datas.first { it.id == id }.apply {
-                show.text = getString(R.string.open_via_kkp, id ?: "")
-                name.setText(this.name)
-                description.setText(this.description)
-                matchRule.setText(this.matchRule)
-                replaceRule.setText(this.replaceRule)
-                packageName.setText(this.packageName)
-                activity.setText(this.activity)
-                uri.setText(this.uri)
-                extra.setText(this.extra)
-                cbShowAssistant.isChecked = this.showInAssistant
-                when (this.iconType) {
-                    "app" -> findViewById<RadioButton>(R.id.rb_app).isChecked = true
-                    "text" -> findViewById<RadioButton>(R.id.rb_text).isChecked = true
-                    "image" -> findViewById<RadioButton>(R.id.rb_image).isChecked = true
-                }
-                iconValue.text = this.iconValue
+            delete.visibility = View.VISIBLE
+            OpenLink.datas.first { it.id == id }.let { link ->
+                show.text = getString(R.string.open_via_kkp, id)
+                name.setText(link.name)
+                description.setText(link.description)
+                matchRule.setText(link.matchRule)
+                replaceRule.setText(link.replaceRule)
+                packageName.setText(link.packageName)
+                activityName.setText(link.activity)
+                uri.setText(link.uri)
+                extra.setText(link.extra)
+                cbShowAssistant.isChecked = link.showInAssistant
+                iconTypeGroup.check(
+                    when (link.iconType) {
+                        "text" -> R.id.rb_text
+                        "image" -> R.id.rb_image
+                        else -> R.id.rb_app
+                    }
+                )
+                iconValue = link.iconValue
                 refreshPreview()
             }
         }
@@ -191,18 +163,8 @@ class JumpEditActivity : Activity() {
         }
 
         copy.setOnClickListener {
-            val json = JSONObject().apply {
-                put("name", name.text.toString())
-                put("description", description.text.toString())
-                put("matchRule", matchRule.text.toString())
-                put("replaceRule", replaceRule.text.toString())
-                put("packageName", packageName.text.toString())
-                put("activity", activity.text.toString())
-                put("uri", uri.text.toString())
-                put("extra", extra.text.toString())
-            }
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("backup", json.toString()))
+            clipboard.setPrimaryClip(ClipData.newPlainText("backup", buildLink().toJson().toString()))
             Toast.makeText(this, getString(R.string.exported_to_clipboard), Toast.LENGTH_SHORT).show()
         }
 
@@ -217,6 +179,32 @@ class JumpEditActivity : Activity() {
         }
     }
 
+    private fun buildLink(
+        showAssistant: Boolean = cbShowAssistant.isChecked,
+        iconT: String = iconType,
+        iconV: String = iconValue
+    ) = OpenLink(
+        name.text.toString(),
+        description.text.toString(),
+        matchRule.text.toString(),
+        replaceRule.text.toString(),
+        packageName.text.toString(),
+        activityName.text.toString(),
+        uri.text.toString(),
+        extra.text.toString(),
+        iconT,
+        iconV,
+        showAssistant
+    )
+
+    private fun refreshPreview() {
+        if (iconType == "image" && iconValue.isEmpty()) {
+            iconPreview.setImageResource(android.R.drawable.ic_menu_gallery)
+            return
+        }
+        buildLink().loadIconAsync(this, iconPreview)
+    }
+
     private fun showAppSelector(onSelected: (String) -> Unit) {
         val progressDialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.loading_apps))
@@ -228,13 +216,7 @@ class JumpEditActivity : Activity() {
             val pm = packageManager
             // 获取所有已安装的应用（包括系统应用）
             val apps = pm.getInstalledApplications(0)
-                .map {
-                    AppInfo(
-                        it.loadLabel(pm).toString(),
-                        it.packageName,
-                        it
-                    )
-                }
+                .map { AppInfo(it.loadLabel(pm).toString(), it.packageName) }
                 .sortedBy { it.name }
 
             runOnUiThread {
@@ -253,11 +235,11 @@ class JumpEditActivity : Activity() {
         val displayApps = apps.toMutableList()
         val adapter = object : ArrayAdapter<AppInfo>(this, R.layout.item_app_selector, displayApps) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val holder: ViewHolder
+                val holder: AppViewHolder
                 val view: View
                 if (convertView == null) {
                     view = LayoutInflater.from(context).inflate(R.layout.item_app_selector, parent, false)
-                    holder = ViewHolder(
+                    holder = AppViewHolder(
                         view.findViewById(R.id.app_name),
                         view.findViewById(R.id.app_package),
                         view.findViewById(R.id.app_icon)
@@ -265,7 +247,7 @@ class JumpEditActivity : Activity() {
                     view.tag = holder
                 } else {
                     view = convertView
-                    holder = view.tag as ViewHolder
+                    holder = view.tag as AppViewHolder
                 }
 
                 val app = getItem(position)!!
@@ -279,20 +261,14 @@ class JumpEditActivity : Activity() {
         }
         listView.adapter = adapter
 
-        searchBar.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val query = s.toString().lowercase()
-                val filtered = apps.filter {
-                    it.name.lowercase().contains(query) || it.packageName.lowercase().contains(query)
-                }
-                adapter.clear()
-                adapter.addAll(filtered)
-                adapter.notifyDataSetChanged()
+        searchBar.onTextChanged { text ->
+            val query = text.lowercase()
+            val filtered = apps.filter {
+                it.name.lowercase().contains(query) || it.packageName.lowercase().contains(query)
             }
-
-            override fun afterTextChanged(s: Editable?) {}
-        })
+            adapter.clear()
+            adapter.addAll(filtered)
+        }
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -309,34 +285,23 @@ class JumpEditActivity : Activity() {
         dialog.show()
     }
 
-    private data class AppInfo(val name: String, val packageName: String, val appInfo: ApplicationInfo)
-    private data class ViewHolder(val name: TextView, val pkg: TextView, val icon: ImageView)
+    private data class AppInfo(val name: String, val packageName: String)
+    private data class AppViewHolder(val name: TextView, val pkg: TextView, val icon: ImageView)
 
     private fun pickImage() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
             type = "image/*"
             addCategory(Intent.CATEGORY_OPENABLE)
         }
-        startActivityForResult(Intent.createChooser(intent, getString(R.string.choose_image)), 2)
+        startActivityForResult(Intent.createChooser(intent, getString(R.string.choose_image)), REQUEST_PICK_IMAGE)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (resultCode == RESULT_OK && requestCode == 2) {
-            val uri = data?.data ?: return
-            val path = saveResizedIcon(uri)
-
-            if (path != null) {
-                findViewById<TextView>(R.id.iconValue).text = path
-                val type = findViewById<RadioGroup>(R.id.iconTypeGroup).checkedRadioButtonId
-                val nameView = findViewById<EditText>(R.id.name)
-                val pkgView = findViewById<EditText>(R.id.packageName)
-                val preview = findViewById<ImageView>(R.id.iconPreview)
-                OpenLink(
-                    nameView.text.toString(), "", "", "",
-                    pkgView.text.toString(), "", "", "",
-                    if (type == R.id.rb_image) "image" else "app", path,
-                    findViewById<CheckBox>(R.id.cb_show_assistant).isChecked
-                ).loadIconAsync(this, preview)
+        if (resultCode == RESULT_OK && requestCode == REQUEST_PICK_IMAGE) {
+            val pickedUri = data?.data ?: return
+            saveResizedIcon(pickedUri)?.let {
+                iconValue = it
+                refreshPreview()
             }
         }
     }
@@ -349,30 +314,25 @@ class JumpEditActivity : Activity() {
                 contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, this) }
             }
 
-            var inSampleSize = 1
-            while (options.outHeight / inSampleSize / 2 >= size && options.outWidth / inSampleSize / 2 >= size) {
-                inSampleSize *= 2
-            }
-
             val bitmap = contentResolver.openInputStream(uri)?.use {
                 BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply {
-                    this.inSampleSize = inSampleSize
+                    inSampleSize = OpenLink.calculateInSampleSize(options, size, size)
                 })
             } ?: return null
 
             val scaledBitmap = Bitmap.createScaledBitmap(bitmap, size, size, true)
             if (scaledBitmap != bitmap) bitmap.recycle()
 
-            val dir = java.io.File(filesDir, "custom_icons").apply { if (!exists()) mkdirs() }
-            val destFile = java.io.File(dir, "icon_${System.currentTimeMillis()}.png")
+            val dir = File(filesDir, "custom_icons").apply { if (!exists()) mkdirs() }
+            val destFile = File(dir, "icon_${System.currentTimeMillis()}.png")
 
-            java.io.FileOutputStream(destFile).use {
+            FileOutputStream(destFile).use {
                 scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
             }
             scaledBitmap.recycle()
             destFile.absolutePath
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w("JumpEdit", "save icon failed", e)
             null
         }
     }

@@ -11,9 +11,8 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
+import org.json.JSONObject
 
 class JumpManageActivity : Activity() {
 
@@ -49,19 +48,7 @@ class JumpManageActivity : Activity() {
             dialog.setView(input)
             dialog.setPositiveButton(getString(R.string.import_action)) { _, _ ->
                 try {
-                    val json = org.json.JSONObject(input.text.toString())
-                    val openLink = OpenLink(
-                        name = json.optString("name", ""),
-                        description = json.optString("description", ""),
-                        matchRule = json.optString("matchRule", ""),
-                        replaceRule = json.optString("replaceRule", ""),
-                        packageName = json.optString("packageName", ""),
-                        activity = json.optString("activity", ""),
-                        uri = json.optString("uri", ""),
-                        extra = if (json.has("extra")) json.optString("extra", "")
-                        else OpenLink.joinExtra(json.optString("extraKey", ""), json.optString("extraValue", ""))
-                    )
-                    openLink.save()
+                    OpenLink.fromJson(JSONObject(input.text.toString())).save()
                     Toast.makeText(this, getString(R.string.imported), Toast.LENGTH_SHORT).show()
                     refreshList()
                 } catch (_: Exception) {
@@ -74,16 +61,9 @@ class JumpManageActivity : Activity() {
         }
     }
 
-    private class ViewHolder(view: View, var itemId: String) {
-        val imageView: ImageView = view.findViewById(R.id.imageView4)
-        val titleText: TextView = view.findViewById(R.id.name)
-        val descriptionText: TextView = view.findViewById(R.id.description)
-    }
-
-    private fun createItemView(item: OpenLink, index: Int, inflater: LayoutInflater): View {
+    private fun createItemView(item: OpenLink, inflater: LayoutInflater): View {
         val view = inflater.inflate(R.layout.item, gridLayout, false)
-        val holder = ViewHolder(view, item.id)
-        view.tag = holder
+        view.tag = ItemViewHolder(view)
 
         updateViewBinding(view, item)
 
@@ -98,8 +78,8 @@ class JumpManageActivity : Activity() {
         view.layoutParams = params
 
         view.setOnLongClickListener {
-            val dragData = android.content.ClipData.newPlainText("position", index.toString())
-            view.startDragAndDrop(dragData, View.DragShadowBuilder(view), view, 0)
+            // 拖拽只在本 Activity 内进行，位置信息走 localState，无需 ClipData 载荷
+            view.startDragAndDrop(null, View.DragShadowBuilder(view), view, 0)
             true
         }
 
@@ -129,11 +109,10 @@ class JumpManageActivity : Activity() {
     }
 
     private fun updateViewBinding(view: View, item: OpenLink) {
-        val holder = view.tag as ViewHolder
-        holder.itemId = item.id
-        holder.titleText.text = item.name
-        holder.descriptionText.text = item.description
-        holder.imageView.setImageBitmap(item.getIconBitmap(this))
+        val holder = view.tag as ItemViewHolder
+        holder.title.text = item.name
+        holder.description.text = item.description
+        holder.icon.setImageBitmap(item.getIconBitmap(this))
     }
 
     private fun refreshList() {
@@ -153,7 +132,7 @@ class JumpManageActivity : Activity() {
         currentDatas.forEachIndexed { index, item ->
             val existingView = viewCache[item.id]
             if (existingView == null) {
-                val newView = createItemView(item, index, inflater)
+                val newView = createItemView(item, inflater)
                 viewCache[item.id] = newView
                 gridLayout.addView(newView, index)
             } else {

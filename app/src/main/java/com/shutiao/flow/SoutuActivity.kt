@@ -16,13 +16,8 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
 import java.io.ByteArrayOutputStream
-import java.util.concurrent.Executors
 
 class SoutuActivity : Activity() {
-
-    companion object {
-        private val executor = Executors.newSingleThreadExecutor()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +36,7 @@ class SoutuActivity : Activity() {
         progressBar.visibility = View.VISIBLE
         sites.visibility = View.GONE
 
-        executor.execute {
+        OpenLink.execute {
             val file = prepareImage(uri, imageView) ?: run {
                 runOnUiThread {
                     Toast.makeText(this, getString(R.string.image_read_failed), Toast.LENGTH_SHORT).show()
@@ -65,6 +60,7 @@ class SoutuActivity : Activity() {
             Pair(outWidth, outHeight)
         }
         if (fileSize > 262_144) {
+            // 上传图按长边限到 800；图标那套是按短边取样，语义不同所以不共用 calculateInSampleSize
             val maxSide = maxOf(width, height)
             var sampleSize = 1
             while (maxSide / (sampleSize * 2) >= 800) sampleSize *= 2
@@ -102,7 +98,7 @@ class SoutuActivity : Activity() {
                             progressBar.visibility = View.GONE
                             sites.visibility = View.VISIBLE
                             view.isEnabled = true
-                            handleResult(item, data)
+                            handleResult(data)
                         }
                     }
                 }
@@ -112,14 +108,13 @@ class SoutuActivity : Activity() {
         sites.numColumns = 2
     }
 
-    private fun handleResult(site: String, data: Data) {
+    private fun handleResult(data: Data) {
         if (!data.successful) {
             Toast.makeText(this, getString(R.string.network_error), Toast.LENGTH_SHORT).show()
             return
         }
         if (data.itemList.isNotEmpty()) {
             startActivity(Intent(this, SoutuResultActivity::class.java).apply {
-                putExtra("site", site)
                 putExtra("url", data.url)
                 putExtra("items", data.itemList.toList().encodeToIntent())
             })

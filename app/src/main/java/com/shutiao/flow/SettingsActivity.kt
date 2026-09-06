@@ -31,7 +31,7 @@ class SettingsActivity : Activity() {
         }
 
         findViewById<Button>(R.id.btn_select_browser).setOnClickListener {
-            showBrowserSelector(context = this)
+            showBrowserSelector(this)
         }
 
         findViewById<Button>(R.id.btn_set_default_assistant).setOnClickListener {
@@ -116,20 +116,7 @@ class SettingsActivity : Activity() {
             val jsonArray = JSONArray()
             OpenLink.getDatas()
             for (item in OpenLink.datas) {
-                val json = JSONObject().apply {
-                    put("name", item.name)
-                    put("iconType", item.iconType)
-                    put("iconValue", item.iconValue)
-                    put("description", item.description)
-                    put("matchRule", item.matchRule)
-                    put("replaceRule", item.replaceRule)
-                    put("packageName", item.packageName)
-                    put("activity", item.activity)
-                    put("uri", item.uri)
-                    put("extra", item.extra)
-                    put("showInAssistant", item.showInAssistant)
-                }
-                jsonArray.put(json)
+                jsonArray.put(item.toJson())
             }
 
             val backupJson = JSONObject().apply {
@@ -159,22 +146,7 @@ class SettingsActivity : Activity() {
             val jsonArray = backupJson.getJSONArray("rules")
 
             for (i in 0 until jsonArray.length()) {
-                val json = jsonArray.getJSONObject(i)
-                val openLink = OpenLink(
-                    name = json.getString("name"),
-                    iconType = json.getString("iconType"),
-                    iconValue = json.getString("iconValue"),
-                    description = json.getString("description"),
-                    matchRule = json.getString("matchRule"),
-                    replaceRule = json.getString("replaceRule"),
-                    packageName = json.getString("packageName"),
-                    activity = json.getString("activity"),
-                    uri = json.getString("uri"),
-                    extra = if (json.has("extra")) json.getString("extra")
-                    else OpenLink.joinExtra(json.optString("extraKey", ""), json.optString("extraValue", "")),
-                    showInAssistant = json.getBoolean("showInAssistant")
-                )
-                openLink.save()
+                OpenLink.fromJson(jsonArray.getJSONObject(i)).save()
             }
 
             if (backupJson.has("browser")) {

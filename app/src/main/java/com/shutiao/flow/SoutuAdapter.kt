@@ -2,34 +2,17 @@ package com.shutiao.flow
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.LruCache
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
-import android.widget.ImageView
-import android.widget.TextView
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.concurrent.Executors
 
 class SoutuAdapter(private val context: Activity, private val items: List<Item>) : BaseAdapter() {
-
-    companion object {
-        private val imageCache = object : LruCache<String, Bitmap>(20 * 1024 * 1024) {
-            override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
-        }
-        private val executor = Executors.newFixedThreadPool(4)
-    }
-
-    private class ViewHolder(view: View) {
-        val imageView: ImageView = view.findViewById(R.id.imageView4)
-        val titleText: TextView = view.findViewById(R.id.name)
-        val descriptionText: TextView = view.findViewById(R.id.description)
-    }
 
     override fun getCount(): Int = items.size
     override fun getItem(position: Int): Item = items[position]
@@ -37,42 +20,34 @@ class SoutuAdapter(private val context: Activity, private val items: List<Item>)
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view: View
-        val holder: ViewHolder
+        val holder: ItemViewHolder
 
         if (convertView == null) {
             view = LayoutInflater.from(context).inflate(R.layout.item, parent, false)
             view.layoutParams = view.layoutParams.apply {
                 width = ViewGroup.LayoutParams.MATCH_PARENT
             }
-            holder = ViewHolder(view)
+            holder = ItemViewHolder(view)
             view.tag = holder
         } else {
             view = convertView
-            holder = view.tag as ViewHolder
+            holder = view.tag as ItemViewHolder
         }
 
         val item = getItem(position)
-        holder.titleText.text = item.title
-        holder.descriptionText.text = item.description
+        holder.title.text = item.title
+        holder.description.text = item.description
 
         val url = item.img
-        holder.imageView.tag = url
-
         if (url.isNullOrEmpty()) {
-            holder.imageView.visibility = View.GONE
+            holder.icon.visibility = View.GONE
         } else {
-            holder.imageView.visibility = View.VISIBLE
-            holder.imageView.layoutParams = holder.imageView.layoutParams.apply {
+            holder.icon.visibility = View.VISIBLE
+            holder.icon.layoutParams = holder.icon.layoutParams.apply {
                 height = ViewGroup.LayoutParams.WRAP_CONTENT
                 width = 500
             }
-            val cachedBitmap = imageCache.get(url)
-            if (cachedBitmap != null) {
-                holder.imageView.setImageBitmap(cachedBitmap)
-            } else {
-                holder.imageView.setImageBitmap(null)
-                loadBitmapAsync(url, holder.imageView)
-            }
+            OpenLink.loadBitmapAsync(url, holder.icon) { downloadBitmap(url) }
         }
 
         view.setOnClickListener {
@@ -81,7 +56,7 @@ class SoutuAdapter(private val context: Activity, private val items: List<Item>)
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.link))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w("SoutuAdapter", "open link failed: ${item.link}", e)
                 }
             }
         }
@@ -89,27 +64,14 @@ class SoutuAdapter(private val context: Activity, private val items: List<Item>)
         return view
     }
 
-    private fun loadBitmapAsync(url: String, imageView: ImageView) {
-        executor.execute {
-            try {
-                val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 5000
-                    readTimeout = 5000
-                }
-                val bitmap = conn.inputStream.use { BitmapFactory.decodeStream(it) }
-                conn.disconnect()
-
-                if (bitmap != null) {
-                    imageCache.put(url, bitmap)
-                    context.runOnUiThread {
-                        if (imageView.tag == url) {
-                            imageView.setImageBitmap(bitmap)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    private fun downloadBitmap(url: String) = try {
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 5000
+            readTimeout = 5000
         }
+        conn.inputStream.use { BitmapFactory.decodeStream(it) }.also { conn.disconnect() }
+    } catch (e: Exception) {
+        Log.w("SoutuAdapter", "thumbnail download failed: $url", e)
+        null
     }
 }

@@ -16,15 +16,18 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.net.Uri
 import android.os.IBinder
-import android.text.TextUtils
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Base64
+import android.util.Log
 import android.util.LruCache
 import android.util.Patterns
-import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -59,11 +62,13 @@ data class OpenLink(
         get() = when (iconType) {
             "text" -> "text_${iconValue.ifEmpty { name.take(1) }}"
             "image" -> "img_$iconValue"
-            else -> "pkg_" + iconValue.ifEmpty {
-                packageName.ifEmpty {
-                    App.sharedPreferences.getString("browser", "") ?: ""
-                }
-            }
+            else -> "pkg_$iconPackage"
+        }
+
+    // app 图标的取源顺序：图标专用包名 → 规则目标包名 → 默认浏览器
+    private val iconPackage: String
+        get() = iconValue.ifEmpty {
+            packageName.ifEmpty { App.sharedPreferences.getString("browser", "") ?: "" }
         }
 
     fun getIconBitmap(context: Context): Bitmap {
@@ -112,9 +117,7 @@ data class OpenLink(
             }
 
             else -> try {
-                val pkg =
-                    iconValue.ifEmpty { packageName.ifEmpty { App.sharedPreferences.getString("browser", "") ?: "" } }
-                context.packageManager.getApplicationIcon(pkg).apply {
+                context.packageManager.getApplicationIcon(iconPackage).apply {
                     setBounds(0, 0, size, size)
                     draw(canvas)
                 }
@@ -128,13 +131,7 @@ data class OpenLink(
     }
 
     fun loadIconAsync(context: Context, imageView: ImageView) {
-        val key = cacheKey
-        imageView.tag = key
-        memoryCache.get(key)?.let { imageView.setImageBitmap(it); return }
-        iconExecutor.execute {
-            val bitmap = getIconBitmap(context)
-            imageView.post { if (imageView.tag == key) imageView.setImageBitmap(bitmap) }
-        }
+        loadBitmapAsync(cacheKey, imageView) { getIconBitmap(context) }
     }
 
     private fun drawDefaultIcon(context: Context, canvas: Canvas, size: Int) {
@@ -144,35 +141,44 @@ data class OpenLink(
         }
     }
 
-    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
-        val (height, width) = options.outHeight to options.outWidth
-        var inSampleSize = 1
-        if (height > reqHeight || width > reqWidth) {
-            val halfHeight = height / 2
-            val halfWidth = width / 2
-            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) inSampleSize *= 2
-        }
-        return inSampleSize
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("name", name); put("description", description); put("matchRule", matchRule)
+        put("replaceRule", replaceRule); put("packageName", packageName); put("activity", activity)
+        put("uri", uri); put("extra", extra)
+        put("iconType", iconType); put("iconValue", iconValue)
+        put("showInAssistant", showInAssistant)
     }
 
     companion object {
-        val memoryCache = object : LruCache<String, Bitmap>(8 * 1024 * 1024) {
+        // 图标与远端缩略图共用一份缓存与一个线程池
+        private val memoryCache = object : LruCache<String, Bitmap>(20 * 1024 * 1024) {
             override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
         }
-        val iconExecutor = Executors.newFixedThreadPool(4)
+        private val bitmapExecutor = Executors.newFixedThreadPool(4)
 
         private val dataLock = Any()
 
-        private fun loadBitmapAsync(cacheKey: String, imageView: ImageView, loadBitmap: () -> Bitmap) {
+        fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+            var inSampleSize = 1
+            while (options.outHeight / inSampleSize / 2 >= reqHeight &&
+                options.outWidth / inSampleSize / 2 >= reqWidth
+            ) inSampleSize *= 2
+            return inSampleSize
+        }
+
+        /** 位图异步加载唯一入口：命中缓存直接回填，否则清空占位并在后台生产；tag 守卫防止复用视图错位。 */
+        fun loadBitmapAsync(cacheKey: String, imageView: ImageView, loadBitmap: () -> Bitmap?) {
             imageView.tag = cacheKey
             memoryCache.get(cacheKey)?.let { imageView.setImageBitmap(it); return }
             imageView.setImageDrawable(null)
-            iconExecutor.execute {
-                val bitmap = loadBitmap()
+            bitmapExecutor.execute {
+                val bitmap = loadBitmap() ?: return@execute
                 memoryCache.put(cacheKey, bitmap)
                 imageView.post { if (imageView.tag == cacheKey) imageView.setImageBitmap(bitmap) }
             }
         }
+
+        fun execute(task: () -> Unit) = bitmapExecutor.execute(task)
 
         fun loadAppIcon(context: Context, pkg: String, imageView: ImageView) {
             loadBitmapAsync("pkg_$pkg", imageView) {
@@ -245,6 +251,22 @@ data class OpenLink(
                 if (v.isEmpty()) k else "$k=$v"
             }.joinToString("\n")
         }
+
+        /** 备份文件与剪贴板 JSON 的统一入口，缺字段取默认值。 */
+        fun fromJson(json: JSONObject) = OpenLink(
+            name = json.optString("name"),
+            description = json.optString("description"),
+            matchRule = json.optString("matchRule"),
+            replaceRule = json.optString("replaceRule"),
+            packageName = json.optString("packageName"),
+            activity = json.optString("activity"),
+            uri = json.optString("uri"),
+            extra = if (json.has("extra")) json.optString("extra")
+            else joinExtra(json.optString("extraKey"), json.optString("extraValue")),
+            iconType = json.optString("iconType", "app"),
+            iconValue = json.optString("iconValue"),
+            showInAssistant = json.optBoolean("showInAssistant")
+        )
 
         fun updateOrder() {
             synchronized(dataLock) {
@@ -392,6 +414,22 @@ data class Data(
     var url: String = ""
 )
 
+/** item.xml 的唯一绑定入口，主页卡片与搜图结果行共用。 */
+class ItemViewHolder(view: View) {
+    val icon: ImageView = view.findViewById(R.id.imageView4)
+    val title: TextView = view.findViewById(R.id.name)
+    val description: TextView = view.findViewById(R.id.description)
+}
+
+/** 只关心文本变化的监听，避开三方法 TextWatcher 样板。 */
+fun EditText.onTextChanged(action: (String) -> Unit) {
+    addTextChangedListener(object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = action(s?.toString() ?: "")
+        override fun afterTextChanged(s: Editable?) {}
+    })
+}
+
 private fun String.shellSingleQuote(): String = replace("'", "'\\''")
 
 fun List<Item>.encodeToIntent(): String = JSONArray().apply {
@@ -429,10 +467,9 @@ class Soutu(val file: ByteArray, private val context: Context) {
         )
         "https://avatars.mds.yandex.net/get-images-cbir/${res.substring(15, res.indexOf('"', 16))}/orig"
     }
-    var data = Data()
-        private set
 
     companion object {
+        // 搜图请求会堵在网络上（connectTimeout 3s），与位图线程池分开以免饰卡图标/缩略图加载
         private val executor = Executors.newCachedThreadPool()
     }
 
@@ -461,138 +498,151 @@ class Soutu(val file: ByteArray, private val context: Context) {
     }
 
     fun upload(site: String, callback: (Data) -> Unit) {
-        data = Data()
         executor.execute {
-            when (site) {
-                "saucenao" -> data.url = "https://saucenao.com/search.php?url=$imageUrl"
-                "google" -> data.url = "https://www.google.com/searchbyimage?client=app&image_url=$imageUrl"
-                "yandex" -> data.url = "https://yandex.ru/images/search?rpt=imageview&cbir_page=similar&url=$imageUrl"
-                "ascii2d" -> data.url = "https://ascii2d.net/search/url/$imageUrl"
-                "百度" -> {
-                    val body = post(
-                        "https://mtbed.netsons.org/upload.php", mapOf("Origin" to "https://695402.xyz"), null, null
-                    )
-                    data.url = "https://graph.baidu.com/details?promotion_name=pc_image_shituindex&carousel=0&image=${
-                        body.substring(
-                            43, body.length - 3
-                        ).replace("\\", "")
-                    }"
-                }
+            val result = try {
+                search(site)
+            } catch (e: Exception) {
+                // 网络/解析失败走 successful=false 回传调用方提示，不让异常抛到线程池外杀进程
+                Log.w("Soutu", "search failed: $site", e)
+                Data(successful = false)
+            }
+            callback(result)
+        }
+    }
 
-                "animetrace" -> {
-                    data.jump = false
-                    val body = post("https://api.animetrace.com/v1/search", null, "file", null)
-                    val characters = JSONObject(body).getJSONArray("data").getJSONObject(0).getJSONArray("character")
-                    for (i in 0 until characters.length()) {
-                        val char = characters.getJSONObject(i)
-                        val name = char.getString("character")
-                        val work = char.getString("work")
-                        data.itemList.add(Item(null, name, work, "https://www.bing.com/images/search?q=$name+$work"))
-                    }
-                }
+    private fun search(site: String): Data {
+        val data = Data()
+        when (site) {
+            "saucenao" -> data.url = "https://saucenao.com/search.php?url=$imageUrl"
+            "google" -> data.url = "https://www.google.com/searchbyimage?client=app&image_url=$imageUrl"
+            "yandex" -> data.url = "https://yandex.ru/images/search?rpt=imageview&cbir_page=similar&url=$imageUrl"
+            "ascii2d" -> data.url = "https://ascii2d.net/search/url/$imageUrl"
+            "百度" -> {
+                val body = post(
+                    "https://mtbed.netsons.org/upload.php", mapOf("Origin" to "https://695402.xyz"), null, null
+                )
+                data.url = "https://graph.baidu.com/details?promotion_name=pc_image_shituindex&carousel=0&image=${
+                    body.substring(
+                        43, body.length - 3
+                    ).replace("\\", "")
+                }"
+            }
 
-                "搜图酱" -> {
-                    data.jump = false
-                    val n = URL("https://soutubot.moe").readText()
-                        .let { it.substring(it.indexOf("m: ") + 3..it.indexOf("m: ") + 15).toLong() }
-                    val kj = Base64.encodeToString(
-                        ((System.currentTimeMillis() / 1000).toBigInteger().pow(2) + (49 + n).toBigInteger()).toString()
-                            .toByteArray(), Base64.NO_WRAP
-                    ).reversed().replace("=", "")
-                    val body = post("https://soutubot.moe/api/search", mapOf("x-api-key" to kj), "file") {
-                        it.write("\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"factor\"\r\n\r\n1.2".toByteArray())
-                    }
-                    data.url =
-                        "https://soutubot.moe/results/${body.substring(body.indexOf("id") + 5..body.indexOf("id") + 20)}"
-                    val list = JSONObject(body).getJSONArray("data")
-                    for (i in 0 until list.length()) {
-                        val item = list.getJSONObject(i)
-                        if (item.getDouble("similarity") < 40.0) break
-                        data.itemList.add(
-                            Item(
-                                item.getString("previewImageUrl"),
-                                item.getString("title"),
-                                context.getString(R.string.similarity_format, item.get("similarity"), item.getString("source")),
-                                when (item.getString("source")) {
-                                    "nhentai" -> "https://nhentai.net${item.getString("subjectPath")}"
-                                    "ehentai" -> "https://exhentai.org${item.getString("subjectPath")}"
-                                    else -> ""
-                                }
-                            )
-                        )
-                    }
+            "animetrace" -> {
+                data.jump = false
+                val body = post("https://api.animetrace.com/v1/search", null, "file", null)
+                val characters = JSONObject(body).getJSONArray("data").getJSONObject(0).getJSONArray("character")
+                for (i in 0 until characters.length()) {
+                    val char = characters.getJSONObject(i)
+                    val name = char.getString("character")
+                    val work = char.getString("work")
+                    data.itemList.add(Item(null, name, work, "https://www.bing.com/images/search?q=$name+$work"))
                 }
             }
-            callback(data)
+
+            "搜图酱" -> {
+                data.jump = false
+                val n = URL("https://soutubot.moe").readText()
+                    .let { it.substring(it.indexOf("m: ") + 3..it.indexOf("m: ") + 15).toLong() }
+                val kj = Base64.encodeToString(
+                    ((System.currentTimeMillis() / 1000).toBigInteger().pow(2) + (49 + n).toBigInteger()).toString()
+                        .toByteArray(), Base64.NO_WRAP
+                ).reversed().replace("=", "")
+                val body = post("https://soutubot.moe/api/search", mapOf("x-api-key" to kj), "file") {
+                    it.write("\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"factor\"\r\n\r\n1.2".toByteArray())
+                }
+                data.url =
+                    "https://soutubot.moe/results/${body.substring(body.indexOf("id") + 5..body.indexOf("id") + 20)}"
+                val list = JSONObject(body).getJSONArray("data")
+                for (i in 0 until list.length()) {
+                    val item = list.getJSONObject(i)
+                    if (item.getDouble("similarity") < 40.0) break
+                    data.itemList.add(
+                        Item(
+                            item.getString("previewImageUrl"),
+                            item.getString("title"),
+                            context.getString(R.string.similarity_format, item.get("similarity"), item.getString("source")),
+                            when (item.getString("source")) {
+                                "nhentai" -> "https://nhentai.net${item.getString("subjectPath")}"
+                                "ehentai" -> "https://exhentai.org${item.getString("subjectPath")}"
+                                else -> ""
+                            }
+                        )
+                    )
+                }
+            }
         }
+        return data
     }
 }
 
-fun showBrowserSelector(context: Context, onCancel: (() -> Unit)? = null) {
-    val progressDialog = AlertDialog.Builder(context)
-        .setTitle(context.getString(R.string.loading_browsers))
-        .setView(android.widget.ProgressBar(context).apply { setPadding(50, 50, 50, 50) })
+fun showBrowserSelector(activity: Activity, onCancel: (() -> Unit)? = null) {
+    val progressDialog = AlertDialog.Builder(activity)
+        .setTitle(activity.getString(R.string.loading_browsers))
+        .setView(android.widget.ProgressBar(activity).apply { setPadding(50, 50, 50, 50) })
         .setCancelable(onCancel != null)
         .apply { onCancel?.let { setOnCancelListener { it() } } }
         .show()
 
     Thread {
-        val pm = context.packageManager
+        val pm = activity.packageManager
         val browserList = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.bing.com")).let {
             pm.queryIntentActivities(it, PackageManager.MATCH_ALL)
-        }.filter { it.activityInfo.packageName != context.packageName }
+        }.filter { it.activityInfo.packageName != activity.packageName }
 
-        (context as? Activity)?.runOnUiThread {
+        activity.runOnUiThread {
             progressDialog.dismiss()
             if (browserList.isEmpty()) {
-                Toast.makeText(context, context.getString(R.string.no_browser_found), Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, activity.getString(R.string.no_browser_found), Toast.LENGTH_SHORT).show()
                 return@runOnUiThread
             }
 
-            val density = context.resources.displayMetrics.density
+            val density = activity.resources.displayMetrics.density
             val iconSize = (64 * density).toInt()
 
-            val layout = GridLayout(context).apply {
+            val layout = GridLayout(activity).apply {
                 columnCount = 4
                 useDefaultMargins = true
                 setPadding(16, 16, 16, 16)
             }
 
-            val dialog = AlertDialog.Builder(context)
-                .setTitle(context.getString(R.string.select_default_browser))
+            val dialog = AlertDialog.Builder(activity)
+                .setTitle(activity.getString(R.string.select_default_browser))
                 .setCancelable(onCancel == null)
-                .setView(ScrollView(context).apply { addView(layout) })
+                .setView(ScrollView(activity).apply { addView(layout) })
                 .create()
 
+            val inflater = LayoutInflater.from(activity)
             browserList.forEach { browser ->
-                val item = LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.CENTER
+                // 与助手图标行共用 item_icon_label，仅图标尺寸与字号按对话框较大的版式覆盖
+                inflater.inflate(R.layout.item_icon_label, layout, false).apply {
                     setPadding(8, 8, 8, 8)
                     layoutParams = GridLayout.LayoutParams().apply {
                         width = 0
                         height = ViewGroup.LayoutParams.WRAP_CONTENT
                         columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     }
+                    findViewById<ImageView>(R.id.icon).apply {
+                        layoutParams = layoutParams.apply { width = iconSize; height = iconSize }
+                        // 对话框里图标框比助手行大，用 FIT_CENTER 让小图也能填满
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                        setImageDrawable(browser.loadIcon(pm))
+                    }
+                    findViewById<TextView>(R.id.name).apply {
+                        textSize = 14f
+                        text = browser.loadLabel(pm)
+                    }
                     setOnClickListener {
                         App.sharedPreferences.edit().putString("browser", browser.activityInfo.packageName).apply()
-                        Toast.makeText(context, context.getString(R.string.browser_set, browser.loadLabel(pm)), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            activity,
+                            activity.getString(R.string.browser_set, browser.loadLabel(pm)),
+                            Toast.LENGTH_SHORT
+                        ).show()
                         dialog.dismiss()
                     }
+                    layout.addView(this)
                 }
-                item.addView(ImageView(context).apply {
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    layoutParams = ViewGroup.LayoutParams(iconSize, iconSize)
-                    setImageDrawable(browser.loadIcon(pm))
-                })
-                item.addView(TextView(context).apply {
-                    text = browser.loadLabel(pm)
-                    gravity = Gravity.CENTER
-                    setPadding(0, 8, 0, 0)
-                    maxLines = 1
-                    ellipsize = TextUtils.TruncateAt.END
-                })
-                layout.addView(item)
             }
             onCancel?.let { dialog.setOnCancelListener { it() } }
             dialog.show()

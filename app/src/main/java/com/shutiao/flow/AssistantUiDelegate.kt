@@ -126,7 +126,7 @@ class AssistantUiDelegate(
     private fun setupIconRow(row: LinearLayout) {
         val inflater = LayoutInflater.from(context)
         OpenLink.datas.filter { it.showInAssistant }.forEach { link ->
-            inflater.inflate(R.layout.item_assistant_icon, row, false).apply {
+            inflater.inflate(R.layout.item_icon_label, row, false).apply {
                 findViewById<ImageView>(R.id.icon).let { link.loadIconAsync(context, it) }
                 findViewById<TextView>(R.id.name).text = link.name
                 setOnClickListener { performSearch(input.text.toString(), link) }
