@@ -3,15 +3,10 @@ package com.shutiao.flow
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Context
-import android.content.ServiceConnection
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
-import android.os.IBinder
 import android.os.Looper
-import android.provider.Settings
 import android.service.voice.VoiceInteractionService
-import rikka.shizuku.Shizuku
 
 /**
  * 修复"半坏"状态：role 仍在本应用手里，但系统实际生效的 VoiceInteractionService 已漂移
@@ -42,7 +37,8 @@ object AssistantHealer {
         context.getSystemService(RoleManager::class.java)
             ?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
 
-    private fun isActive(context: Context): Boolean = VoiceInteractionService.isActiveService(
+    /** 运行态服务是本应用（不看 role，JumpActivity 判断能否拉起面板时用）。 */
+    fun isActive(context: Context): Boolean = VoiceInteractionService.isActiveService(
         context, ComponentName(context, AssistantService::class.java)
     )
 
@@ -52,7 +48,7 @@ object AssistantHealer {
         val now = System.currentTimeMillis()
         if (now - lastRepairAt < RETRY_INTERVAL_MS) return
         lastRepairAt = now
-        execByShizukuOrRoot(buildRepairCommand(context.applicationContext))
+        ShellExec.exec(buildRepairCommand(context.applicationContext), requestPermissionIfNeeded = false)
     }
 
     /**
@@ -65,7 +61,7 @@ object AssistantHealer {
         val app = context.applicationContext
         verifying = true
         lastRepairAt = System.currentTimeMillis()
-        execByShizukuOrRoot(buildRepairCommand(app))
+        ShellExec.exec(buildRepairCommand(app), requestPermissionIfNeeded = false)
         Handler(Looper.getMainLooper()).postDelayed({
             verifying = false
             onSettled(isActive(app))
@@ -81,24 +77,5 @@ object AssistantHealer {
             append("cmd role remove-role-holder --user 0 ${RoleManager.ROLE_ASSISTANT} ${context.packageName}\n")
             append("cmd role add-role-holder --user 0 ${RoleManager.ROLE_ASSISTANT} ${context.packageName}\n")
         }
-    }
-
-    private fun execByShizukuOrRoot(command: String) {
-        try {
-            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
-                val conn = object : ServiceConnection {
-                    override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                        IUserService.Stub.asInterface(binder).exec(command)
-                        Shizuku.unbindUserService(App.args, this, false)
-                    }
-
-                    override fun onServiceDisconnected(name: ComponentName?) {}
-                }
-                Shizuku.bindUserService(App.args, conn)
-                return
-            }
-        } catch (_: Exception) {
-        }
-        App.runRootCommand(command)
     }
 }

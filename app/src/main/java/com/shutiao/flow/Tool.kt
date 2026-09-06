@@ -2,11 +2,9 @@ package com.shutiao.flow
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -15,7 +13,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.net.Uri
-import android.os.IBinder
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Base64
@@ -33,7 +30,6 @@ import android.widget.TextView
 import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONObject
-import rikka.shizuku.Shizuku
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -379,30 +375,7 @@ data class OpenLink(
             append(" > /dev/null 2>&1\n")
         }
 
-        try {
-            val conn = object : ServiceConnection {
-                override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                    IUserService.Stub.asInterface(binder).exec(command)
-                    Shizuku.unbindUserService(App.args, this, false)
-                }
-
-                override fun onServiceDisconnected(name: ComponentName?) {}
-            }
-            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
-                Shizuku.bindUserService(App.args, conn)
-            } else {
-                Shizuku.addRequestPermissionResultListener(object : Shizuku.OnRequestPermissionResultListener {
-                    override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
-                        if (grantResult == PackageManager.PERMISSION_GRANTED) Shizuku.bindUserService(App.args, conn)
-                        else App.runRootCommand(command)
-                        Shizuku.removeRequestPermissionResultListener(this)
-                    }
-                })
-                Shizuku.requestPermission(0)
-            }
-        } catch (_: Exception) {
-            App.runRootCommand(command)
-        }
+        ShellExec.exec(command, requestPermissionIfNeeded = true)
     }
 }
 

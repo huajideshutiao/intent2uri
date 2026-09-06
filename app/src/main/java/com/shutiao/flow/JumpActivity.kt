@@ -1,21 +1,10 @@
 package com.shutiao.flow
 
 import android.app.Activity
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.service.voice.VoiceInteractionService
 
 class JumpActivity : Activity() {
-
-    /**
-     * 本应用的助手服务是否正被系统选为当前 VoiceInteractionService——只有这时
-     * showSession 才能拉起面板，否则退回自己的 AssistantActivity。
-     */
-    private fun isAssistant(context: Context): Boolean = VoiceInteractionService.isActiveService(
-        context, ComponentName(context, AssistantService::class.java)
-    )
 
     private fun open(intent: Intent) {
         AssistantHealer.checkAndRepair(this)
@@ -41,7 +30,9 @@ class JumpActivity : Activity() {
                     else -> ""
                 }
                 if (!text.isNullOrEmpty()) {
-                    if (isAssistant(this)) {
+                    // 只有本应用正被系统选为当前 VoiceInteractionService 时 showSession 才能拉起面板，
+                    // 否则退回自己的 AssistantActivity
+                    if (AssistantHealer.isActive(this)) {
                         startService(Intent(this, AssistantService::class.java).apply {
                             action = "com.shutiao.flow.SHOW_ASSISTANT"
                             putExtra("share_text", text)
