@@ -1,14 +1,11 @@
-import com.android.build.api.dsl.ApplicationExtension
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-//    alias(libs.plugins.kotlinx.serialization)
 }
 
-configure<ApplicationExtension> {
+android {
     val keystorePropertiesFile = rootProject.file("local.properties")
     val keystoreProperties = Properties()
     if (keystorePropertiesFile.exists()) {
@@ -33,7 +30,7 @@ configure<ApplicationExtension> {
         versionCode = 3
         versionName = "3.2"
     }
-    
+
     buildFeatures {
         buildConfig = true
         aidl = true
@@ -62,15 +59,7 @@ configure<ApplicationExtension> {
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
-    }
-}
-
 dependencies {
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
-//    implementation(libs.kotlinx.serialization.core)
-//    implementation(libs.kotlinx.serialization.json)
 }
